@@ -1,0 +1,6 @@
+/.cache
+/.env
+/assets
+/target
+/db.sqlite
+__pycache__

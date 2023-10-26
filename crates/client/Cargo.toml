@@ -1,0 +1,37 @@
+[package]
+name = "riamu"
+version = "3.0.0-alpha"
+edition = "2021"
+
+[dependencies]
+c.workspace = true
+cairo-rs = { workspace = true, features = ["png", "v1_16"] }
+chrono.workspace = true
+ego-tree.workspace = true
+filetime.workspace = true
+futures.workspace = true
+inotify.workspace = true
+itertools.workspace = true
+lib.workspace = true
+log.workspace = true
+lru.workspace = true
+macros.workspace = true
+pango = { workspace = true, features = ["v1_42"] }
+pangocairo.workspace = true
+procfs.workspace = true
+pyo3.workspace = true
+python.workspace = true
+regex-lite.workspace = true
+reqwest = { workspace = true, features = ["json"] }
+scraper.workspace = true
+sea-orm = { workspace = true, features = ["debug-print", "macros", "runtime-tokio-native-tls", "sqlx-sqlite"] }
+sea-orm-migration.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serenity = { workspace = true, features = ["native_tls_backend", "cache", "chrono", "client", "collector", "gateway", "model"] }
+tempfile.workspace = true
+tokio = { workspace = true, features = ["macros", "rt", "signal"] }
+tokio-util.workspace = true
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["ansi", "env-filter", "json"] }
+url.workspace = true

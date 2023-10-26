@@ -1,0 +1,47 @@
+[workspace]
+default-members = ["crates/client"]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.dependencies]
+c = { path = "crates/c" }
+lib = { path = "crates/lib" }
+macros = { path = "crates/macros" }
+python = { path = "crates/python" }
+
+cairo-rs = { version = "0.18.0", default-features = false }
+chrono = { version = "0.4.26", default-features = false }
+ego-tree = "0.6.2"
+filetime = "0.2.22"
+futures = "0.3.28"
+inotify = "0.10.2"
+itertools = "0.10.5"
+log = "0.4.19"
+lru = { version = "0.12.0", default-features = false }
+pango = "0.18.0"
+pangocairo = "0.18.0"
+procfs = { version = "0.15.1", default-features = false }
+pyo3 = "0.20.0"
+regex-lite = "0.1.0"
+reqwest = { version = "0.11.18", default-features = false }
+scraper = { version = "0.17.1", default-features = false }
+sea-orm = { version = "0.12.2", default-features = false }
+sea-orm-migration = { version = "0.12.2", default-features = false }
+serde = "1.0.185"
+serde_json = "1.0.105"
+serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next", default-features = false }
+tempfile = "3.6.0"
+thiserror = "1.0.49"
+tokio = { version = "1.28.2", default-features = false }
+tokio-util = "0.7.8"
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.17", default-features = false }
+url = "2.4.0"
+
+darling = "0.20.1"
+proc-macro2 = "1.0.63"
+quote = "1.0.28"
+syn = "2.0.22"
+
+bindgen = { version = "0.68.0", default-features = false }
+pkg-config = "0.3.27"

@@ -1,0 +1,11 @@
+[package]
+name = "c"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cairo-rs.workspace = true
+
+[build-dependencies]
+bindgen.workspace = true
+pkg-config.workspace = true

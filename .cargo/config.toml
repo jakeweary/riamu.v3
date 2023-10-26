@@ -1,0 +1,13 @@
+[build]
+rustflags = [
+  "--cfg=tokio_unstable",
+  "-Ctarget-cpu=native",
+  "-Drust_2018_idioms",
+  "-Auncommon_codepoints",
+  "-Aconfusable_idents",
+  "-Amixed_script_confusables",
+]
+
+[env]
+# https://github.com/PyO3/pyo3/issues/1708
+PYO3_PYTHON = "/usr/bin/python3"

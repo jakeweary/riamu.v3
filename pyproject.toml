@@ -1,0 +1,16 @@
+[tool.yapf]
+based_on_style = "pep8"
+column_limit = 120
+indent_width = 2
+continuation_indent_width = 2
+spaces_before_comment = 1
+each_dict_entry_on_separate_line = false
+blank_line_before_nested_class_or_def = false
+blank_lines_around_top_level_definition = 1
+
+[tool.pyright]
+typeCheckingMode = "strict"
+reportMissingTypeStubs = "none"
+reportUnusedFunction = "warning"
+reportUnusedImport = "warning"
+reportUnnecessaryTypeIgnoreComment = "warning"

@@ -1,0 +1,22 @@
+{
+  "[python]": {
+    "editor.formatOnSave": true,
+  },
+  "[rust]": {
+    "editor.formatOnSave": true
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    ".pytest_cache": true,
+  },
+  "editor.inlayHints.enabled": "offUnlessPressed",
+  "python.languageServer": "Pylance",
+  "python.formatting.provider": "yapf",
+  "python.terminal.activateEnvironment": false,
+  "python.analysis.pylanceLspClientEnabled": true,
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.inlayHints.callArgumentNames": true,
+  "python.analysis.inlayHints.functionReturnTypes": true,
+  "python.analysis.inlayHints.pytestParameters": true,
+  "python.analysis.inlayHints.variableTypes": true,
+}
