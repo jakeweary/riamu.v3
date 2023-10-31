@@ -4,16 +4,16 @@ set -euo pipefail
 # https://stackoverflow.com/a/73254328/8802501
 # https://stackoverflow.com/a/75966904/8802501
 
-mkdir -p .tmp
+mkdir -p .tmp assets
 trap 'rm -rf .tmp' EXIT
 
 # ---
 
 git clone -n --depth=1 --filter=tree:0 https://github.com/basmilius/weather-icons.git .tmp/weather-icons
-cd .tmp/weather-icons
-  git sparse-checkout set --sparse-index production/fill/svg-static
+pushd .tmp/weather-icons
+  git sparse-checkout set --sparse-index /production/fill/svg-static
   git checkout
-cd -
+popd
 
 mkdir -p assets/icons/weather
 find .tmp -name '*.svg' -type f -exec mv -t assets/icons/weather {} +
@@ -22,37 +22,46 @@ rm -rf .tmp/*
 # ---
 
 git clone -n --depth=1 --filter=tree:0 https://github.com/google/material-design-icons.git .tmp/material-icons
-cd .tmp/material-icons
-  git sparse-checkout set --no-cone 'variablefont/MaterialSymbolsOutlined\[*\].ttf'
+pushd .tmp/material-icons
+  git sparse-checkout set --no-cone '/variablefont/MaterialSymbolsOutlined\[*\].ttf'
   git checkout
-cd -
+popd
 
 git clone -n --depth=1 --filter=tree:0 https://github.com/googlefonts/roboto-flex.git .tmp/roboto-flex
-cd .tmp/roboto-flex
-  git sparse-checkout set --no-cone 'fonts/RobotoFlex\[*\].ttf'
+pushd .tmp/roboto-flex
+  git sparse-checkout set --no-cone '/fonts/RobotoFlex\[*\].ttf'
   git checkout
-cd -
+popd
 
 git clone -n --depth=1 --filter=tree:0 https://github.com/google/fonts.git .tmp/google-fonts
-cd .tmp/google-fonts
-  git sparse-checkout set --no-cone 'ofl/notosans*/NotoSans*\[*\].ttf' \
+pushd .tmp/google-fonts
+  git sparse-checkout set --no-cone '/ofl/notosans*/NotoSans*\[*\].ttf' \
     '!*Italic*' '!*Mono*' '!*Display*' '!*Looped*' '!*Unjoined*'
   git checkout
-cd -
+popd
 
 # git clone -n --depth=1 --filter=tree:0 https://github.com/notofonts/notofonts.github.io.git .tmp/noto
-#   cd .tmp/noto
-#   git sparse-checkout set --no-cone 'fonts/*/googlefonts/variable/NotoSans*\[*\].ttf' \
+# pushd .tmp/noto
+#   git sparse-checkout set --no-cone '/fonts/*/googlefonts/variable/NotoSans*\[*\].ttf' \
 #     '!*Italic*' '!*Mono*'
 #   git checkout
-# cd -
+# popd
 
 # git clone -n --depth=1 --filter=tree:0 https://github.com/notofonts/noto-cjk.git .tmp/noto-cjk
-# cd .tmp/noto-cjk
-#   git sparse-checkout set --no-cone 'google-fonts/NotoSans*\[*\].ttf'
+# pushd .tmp/noto-cjk
+#   git sparse-checkout set --no-cone '/google-fonts/NotoSans*\[*\].ttf'
 #   git checkout
-# cd -
+# popd
 
 mkdir -p assets/fonts
 find .tmp -name '*.ttf' -type f -exec mv -t assets/fonts {} +
 rm -rf .tmp/*
+
+# ---
+
+# git clone -n --depth=1 --filter=tree:0 https://github.com/Calinou/free-blue-noise-textures.git .tmp/blue-noise
+# pushd .tmp/blue-noise
+#   git sparse-checkout set --no-cone 'LDR_RGB[A1]_0.png' '!/*_*_*/*'
+#   git checkout
+# popd
+# mv .tmp/blue-noise assets

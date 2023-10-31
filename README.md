@@ -19,7 +19,7 @@ docker compose down # shutdown
 
 # explore the database
 docker run --volumes-from riamu.v3 --rm -it alpine \
-  sh -c 'apk add sqlite && sqlite3 -header -column /data/db.sqlite'
+  sh -c 'apk add sqlite && sqlite3 -header -column /app/data/db.sqlite'
 ```
 
 ### Development

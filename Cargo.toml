@@ -1,13 +1,13 @@
 [workspace]
-default-members = ["crates/client"]
-members = ["crates/*"]
+default-members = ["rust/client"]
+members = ["rust/*"]
 resolver = "2"
 
 [workspace.dependencies]
-c = { path = "crates/c" }
-lib = { path = "crates/lib" }
-macros = { path = "crates/macros" }
-python = { path = "crates/python" }
+c = { path = "rust/c" }
+lib = { path = "rust/lib" }
+macros = { path = "rust/macros" }
+python = { path = "rust/python" }
 
 cairo-rs = { version = "0.18.0", default-features = false }
 chrono = { version = "0.4.26", default-features = false }
@@ -22,6 +22,7 @@ pango = "0.18.0"
 pangocairo = "0.18.0"
 procfs = { version = "0.15.1", default-features = false }
 pyo3 = "0.20.0"
+rayon = "1.7.0"
 regex-lite = "0.1.0"
 reqwest = { version = "0.11.18", default-features = false }
 scraper = { version = "0.17.1", default-features = false }
