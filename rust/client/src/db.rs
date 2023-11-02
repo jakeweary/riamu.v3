@@ -1,18 +1,23 @@
-use sea_orm::*;
-use sea_orm_migration::prelude::*;
+use std::str::FromStr;
 
-use self::migrator::Migrator;
+use sqlx::sqlite::*;
 
-pub mod entities;
-pub mod migrator;
-pub mod types;
+pub type Database = Sqlite;
+pub type Pool = sqlx::Pool<Sqlite>;
+pub type QueryBuilder<'a> = sqlx::QueryBuilder<'a, Sqlite>;
+pub type QueryResult = SqliteQueryResult;
 
-pub async fn init(options: impl Into<ConnectOptions>) -> Result<DbConn, DbErr> {
+pub mod counters;
+pub mod statuses;
+pub mod users;
+
+pub async fn init(url: &str) -> sqlx::Result<Pool> {
   tracing::debug!("initializing database connection…");
-  let connection = Database::connect(options).await?;
+  let options = SqliteConnectOptions::from_str(url)?;
+  let pool = SqlitePoolOptions::new().connect_with(options).await?;
 
   tracing::debug!("applying all pending migrations…");
-  Migrator::up(&connection, None).await?;
+  sqlx::migrate!("../../migrations").run(&pool).await?;
 
-  Ok(connection)
+  Ok(pool)
 }

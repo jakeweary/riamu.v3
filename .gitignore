@@ -2,6 +2,6 @@
 /.env
 /assets
 /target
-/db.sqlite
+/db.*
 __pycache__
 .uuid

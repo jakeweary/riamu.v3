@@ -4,12 +4,10 @@ use std::fmt::Display;
 use cairo::{Filter, FontSlant, FontWeight, Format, ImageSurface, SurfacePattern};
 use chrono::{DateTime, Days, FixedOffset, Local, Offset, TimeZone, Timelike, Utc};
 use lib::{cairo::ext::*, task};
-use sea_orm::prelude::*;
 use serenity::all::*;
 
 use crate::client::{err, Context, Result};
-use crate::db::entities::*;
-use crate::db::types::DiscordId;
+use crate::db::{self, statuses};
 
 #[macros::command(description = "Show one month of someone's status history")]
 pub async fn run(
@@ -24,15 +22,12 @@ pub async fn run(
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("querying database…");
-  let rows = status::Entity::find()
-    .filter(status::Column::User.eq(DiscordId(user.id.get())))
-    .all(&ctx.client.db)
-    .await?;
+  let statuses = db::statuses::query(&ctx.client.db, user.id, "-30 days").await?;
 
   tracing::debug!("rendering image…");
   let png = task::spawn_blocking(move || -> Result<_> {
     let mut png = Vec::new();
-    status_history(now, rows)?.write_to_png(&mut png)?;
+    status_history(now, &statuses)?.write_to_png(&mut png)?;
     Ok(png)
   })
   .await??;
@@ -54,7 +49,7 @@ const IMAGE_H: i32 = 350;
 const CELL_W: i32 = 19;
 const CELL_H: i32 = 10;
 
-fn status_history<Tz>(dt: DateTime<Tz>, rows: Vec<status::Model>) -> cairo::Result<ImageSurface>
+fn status_history<Tz>(dt: DateTime<Tz>, statuses: &[db::statuses::Row]) -> cairo::Result<ImageSurface>
 where
   Tz: TimeZone,
   Tz::Offset: Display,
@@ -82,7 +77,7 @@ where
 
   // ---
 
-  let data = status_history_data(dt, rows)?;
+  let data = status_history_data(dt, statuses)?;
   let pat = SurfacePattern::create(&data);
   pat.set_filter(Filter::Nearest);
 
@@ -152,22 +147,12 @@ where
   Ok(img)
 }
 
-fn status_history_data<Tz>(dt: DateTime<Tz>, mut rows: Vec<status::Model>) -> cairo::Result<ImageSurface>
+fn status_history_data<Tz>(dt: DateTime<Tz>, statuses: &[db::statuses::Row]) -> cairo::Result<ImageSurface>
 where
   Tz: TimeZone,
 {
   let now = dt.timestamp();
   let tomorrow = next_day(dt).timestamp();
-
-  rows.push(status::Model {
-    time: now,
-    id: Default::default(),
-    user: Default::default(),
-    status: Default::default(),
-    desktop: Default::default(),
-    mobile: Default::default(),
-    web: Default::default(),
-  });
 
   let px = 60 * 60 / (CELL_W - 1) as usize; // seconds in one pixel
   let w = 24 * CELL_W;
@@ -176,16 +161,16 @@ where
   let mut img = ImageSurface::create(Format::ARgb32, w, h)?;
   let mut data = img.data().unwrap();
 
-  for [prev, curr] in rows.array_windows() {
-    let i0 = (tomorrow - curr.time) as usize / px;
-    let i1 = (tomorrow - prev.time) as usize / px;
+  let mut draw = |status: statuses::Packed, start, end| {
+    let i0 = (tomorrow - end) as usize / px;
+    let i1 = (tomorrow - start) as usize / px;
 
     if i0 != i1 {
-      let color = match &*prev.status {
-        "offline" => 0xff_80848e_u32.to_be_bytes(),
-        "online" => 0xff_23a55a_u32.to_be_bytes(),
-        "idle" => 0xff_f0b232_u32.to_be_bytes(),
-        "dnd" => 0xff_f23f43_u32.to_be_bytes(),
+      let color = match status.status() {
+        OnlineStatus::Offline => 0xff_80848e_u32.to_be_bytes(),
+        OnlineStatus::Online => 0xff_23a55a_u32.to_be_bytes(),
+        OnlineStatus::Idle => 0xff_f0b232_u32.to_be_bytes(),
+        OnlineStatus::DoNotDisturb => 0xff_f23f43_u32.to_be_bytes(),
         _ => panic!(),
       };
 
@@ -198,6 +183,14 @@ where
         }
       }
     }
+  };
+
+  for [prev, curr] in statuses.array_windows() {
+    draw(prev.status, prev.time, curr.time);
+  }
+
+  if let Some(status) = statuses.last() {
+    draw(status.status, status.time, now);
   }
 
   data.reverse();

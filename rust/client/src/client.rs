@@ -3,19 +3,17 @@ use std::io::Result as IoResult;
 use std::panic::AssertUnwindSafe;
 use std::result::Result as StdResult;
 use std::sync::Arc;
-use std::time::{self, Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 
 use ::serenity::all as serenity;
 use futures::{FutureExt, TryFutureExt};
 use lib::discord::colors;
 use pyo3::{PyErr, Python};
-use sea_orm::{prelude::*, sea_query::*, *};
 use tokio::signal;
 use tokio::signal::unix::{signal, *};
 
 use crate::cache::LruFileCache;
-use crate::db::entities::{prelude::*, *};
-use crate::db::types::DiscordId;
+use crate::db;
 
 pub use self::command::*;
 pub use self::command_error::*;
@@ -45,7 +43,7 @@ pub struct Client {
   pub env: Env,
   pub commands: Commands,
   pub cache: Arc<LruFileCache>,
-  pub db: DbConn,
+  pub db: db::Pool,
 }
 
 impl Client {
@@ -53,15 +51,15 @@ impl Client {
     c::fontconfig::add_dir("assets/fonts")?;
 
     let env = Env::load();
-    let db = crate::db::init(&env.database_url).await?;
-    let init_cache = {
+    let commands = crate::commands::build();
+    let db = db::init(&env.database_url).await?;
+    let cache = {
       let base_url = &env.cache_base_url;
       let working_dir = &env.cache_working_dir;
       let limit_bytes = env.cache_limit_GiB << 30;
-      LruFileCache::new(base_url, working_dir, limit_bytes)
+      let cache = LruFileCache::new(base_url, working_dir, limit_bytes).await?;
+      Arc::new(cache)
     };
-    let cache = Arc::new(init_cache.await?);
-    let commands = crate::commands::build();
 
     let client = Self {
       env,
@@ -280,73 +278,33 @@ impl serenity::RawEventHandler for Client {
           user_name = Some(message.author.name.clone());
         }
         Event::PresenceUpdate(PresenceUpdateEvent { presence, .. }) => {
-          let name = |status: OnlineStatus| status.name().into();
-
           user_id = Some(presence.user.id);
           user_name = presence.user.name.clone();
-          user_status = Some(match presence.client_status {
-            Some(clients) => status::ActiveModel {
-              status: Set(name(presence.status)),
-              desktop: clients.desktop.map(name).into_active_value(),
-              mobile: clients.mobile.map(name).into_active_value(),
-              web: clients.web.map(name).into_active_value(),
-              ..Default::default()
-            },
-            None => Default::default(),
-          });
+          user_status = Some(presence.into());
         }
         _ => {}
       }
     }
 
-    {
-      use counter::Column::*;
+    let inc = db::counters::increment(&self.db, |names| {
+      names.push_bind("events");
+      if messages > 0 {
+        names.push_bind("messages");
+      }
+      if commands > 0 {
+        names.push_bind("commands");
+      }
+    });
+    inc.await.unwrap();
 
-      let counters_to_increment = [
-        Some("events"),
-        (messages > 0).then_some("messages"),
-        (commands > 0).then_some("commands"),
-      ];
-
-      let update = Counter::update_many()
-        .col_expr(Count, Expr::col(Count).add(1))
-        .filter(Name.is_in(counters_to_increment));
-
-      update.exec(&self.db).await.unwrap();
+    if let Some(uid) = user_id {
+      let upsert = db::users::upsert(&self.db, uid, user_name, messages, commands);
+      upsert.await.unwrap();
     }
 
-    if let Some(user_id) = user_id {
-      use user::Column::*;
-
-      let user = user::ActiveModel {
-        id: Set(DiscordId(user_id.get())),
-        messages: Set(messages),
-        commands: Set(commands),
-        name: user_name.into_active_value(),
-      };
-
-      let on_conflict = OnConflict::column(Id)
-        .update_columns(user.name.is_set().then_some(Name))
-        .value(Messages, Expr::col(Messages).add(messages))
-        .value(Commands, Expr::col(Commands).add(commands))
-        .to_owned();
-
-      let upsert = User::insert(user).on_conflict(on_conflict);
-
-      upsert.exec(&self.db).await.unwrap();
-    }
-
-    if let (Some(user_id), Some(status)) = (user_id, user_status) {
-      let now = SystemTime::now();
-      let now = now.duration_since(time::UNIX_EPOCH).unwrap().as_secs();
-
-      let status = status::ActiveModel {
-        user: Set(DiscordId(user_id.get())),
-        time: Set(now as i64),
-        ..status
-      };
-
-      Status::insert(status).exec(&self.db).await.unwrap();
+    if let (Some(uid), Some(status)) = (user_id, user_status) {
+      let insert = db::statuses::insert(&self.db, uid, status);
+      insert.await.unwrap();
     }
   }
 }

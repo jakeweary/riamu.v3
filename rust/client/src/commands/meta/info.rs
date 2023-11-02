@@ -5,11 +5,10 @@ use std::{env, iter, process, str};
 
 use lib::fmt::num::Format;
 use procfs::{process::*, *};
-use sea_orm::EntityTrait;
 use serenity::all::*;
 
 use crate::client::{Context, Result};
-use crate::db::entities::{prelude::*, *};
+use crate::db;
 
 #[macros::command(description = "Show some technical info about me")]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
@@ -32,7 +31,7 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
   let channels = cache.guild_channel_count();
   let users = cache.user_count();
 
-  let counters = Counter::find().all(&ctx.client.db).await?;
+  let counters = db::counters::all(&ctx.client.db).await?;
 
   let embed = CreateEmbed::new()
     .thumbnail(bot_face)
@@ -65,7 +64,7 @@ fn desc(load: &LoadAverage, prev: &KernelStats, curr: &KernelStats) -> StdResult
   Ok(acc)
 }
 
-fn footer(counters: &[counter::Model]) -> StdResult<CreateEmbedFooter, fmt::Error> {
+fn footer(counters: &[db::counters::Counter]) -> StdResult<CreateEmbedFooter, fmt::Error> {
   let mut acc = String::new();
   for (i, counter) in counters.iter().enumerate() {
     let sep = if i == 0 { "received" } else { "," };

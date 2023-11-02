@@ -5,6 +5,11 @@ use std::{env, error, result, str};
 type Error = Box<dyn error::Error + Send + Sync>;
 type Result<T> = result::Result<T, Error>;
 
+fn main() -> Result<()> {
+  println!("cargo:rerun-if-changed=../../migrations");
+  envs()
+}
+
 fn envs() -> Result<()> {
   let ts = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
   println!("cargo:rustc-env=BUILD_TIMESTAMP={ts:?}");
@@ -31,8 +36,4 @@ fn envs() -> Result<()> {
   println!("cargo:rustc-env=BUILD_COMMIT_HASH={}", parts.next().unwrap());
 
   Ok(())
-}
-
-fn main() -> Result<()> {
-  envs()
 }
