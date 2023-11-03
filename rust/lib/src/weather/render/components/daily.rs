@@ -4,7 +4,7 @@ use super::fmt::Num;
 use super::Result;
 use super::*;
 
-pub fn daily(ctx: &Context, weather: &api::onecall::Root) -> Result<()> {
+pub fn daily(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   let width = 8.0 * 28.0;
   let day_w = width / weather.daily.len() as f64;
 
@@ -26,13 +26,11 @@ pub fn daily(ctx: &Context, weather: &api::onecall::Root) -> Result<()> {
     ctx.show_text(&text)?;
     ctx.translate(0.0, font_size + 4.0);
 
+    let (svg, size) = icons::openweather(&day.weather[0].icon)?;
     ctx.save()?;
-    icons::openweather(&day.weather[0].icon, &|svg, size| -> Result<_> {
-      ctx.scale1(28.0 / size.height);
-      ctx.translate(-size.width / 2.0, 0.0);
-      svg.render_cairo(ctx)?;
-      Ok(())
-    })?;
+    ctx.scale1(28.0 / size.height);
+    ctx.translate(-size.width / 2.0, 0.0);
+    svg.render_cairo(ctx)?;
     ctx.restore()?;
     ctx.translate(0.0, 28.0 + 1.0);
 

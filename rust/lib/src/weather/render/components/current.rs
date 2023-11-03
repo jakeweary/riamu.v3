@@ -7,7 +7,7 @@ use super::fmt::Num;
 use super::Result;
 use super::{api, icons, util};
 
-pub fn current(ctx: &Context, weather: &api::onecall::Root, loc: &api::geo::Location) -> Result<()> {
+pub fn current(ctx: &Context, weather: &api::Onecall, loc: &api::geo::Location) -> Result<()> {
   ctx.save()?;
   ctx.translate(12.0, 8.0);
 
@@ -49,13 +49,11 @@ pub fn current(ctx: &Context, weather: &api::onecall::Root, loc: &api::geo::Loca
     acc
   })?;
 
+  let (svg, size) = icons::openweather(&weather.current.weather[0].icon)?;
   ctx.translate(0.0, 8.0);
   ctx.save()?;
-  icons::openweather(&weather.current.weather[0].icon, &|svg, size| -> Result<_> {
-    ctx.scale(64.0 / size.width, 64.0 / size.height);
-    svg.render_cairo(ctx)?;
-    Ok(())
-  })?;
+  ctx.scale(64.0 / size.width, 64.0 / size.height);
+  svg.render_cairo(ctx)?;
   ctx.restore()?;
   ctx.translate(64.0 + 8.0, 0.0);
 

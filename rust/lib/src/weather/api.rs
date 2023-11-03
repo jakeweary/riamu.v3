@@ -1,5 +1,8 @@
 use url::Url;
 
+pub use self::geo::Root as Geo;
+pub use self::onecall::Root as Onecall;
+
 pub mod geo;
 pub mod onecall;
 
@@ -12,7 +15,7 @@ impl Api {
     Self { key: key.to_string() }
   }
 
-  pub async fn geo(&self, query: &str) -> reqwest::Result<geo::Root> {
+  pub async fn geo(&self, query: &str) -> reqwest::Result<Geo> {
     let appid = ("appid", &*self.key);
     let q = ("q", query);
 
@@ -24,7 +27,7 @@ impl Api {
     Ok(json)
   }
 
-  pub async fn onecall(&self, lat: f64, lon: f64) -> reqwest::Result<onecall::Root> {
+  pub async fn onecall(&self, lat: f64, lon: f64) -> reqwest::Result<Onecall> {
     let appid = ("appid", &*self.key);
     let lat = ("lat", &*lat.to_string());
     let lon = ("lon", &*lon.to_string());

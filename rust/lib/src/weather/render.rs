@@ -1,5 +1,7 @@
+use std::io;
+
+use c::rsvg;
 use cairo::*;
-use thiserror::Error;
 
 use crate::cairo::ext::ContextExt;
 
@@ -14,11 +16,12 @@ mod util;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Error, Debug)]
+#[derive(Debug, thiserror::Error)]
 #[error(transparent)]
 pub enum Error {
   Cairo(#[from] cairo::Error),
-  RSvg(#[from] c::rsvg::Error),
+  RSvg(#[from] rsvg::Error),
+  Io(#[from] io::Error),
 }
 
 // ---
@@ -27,7 +30,7 @@ const SCALE: i32 = 8;
 const IMAGE_W: i32 = 550;
 const IMAGE_H: i32 = 350;
 
-pub fn render(weather: &api::onecall::Root, loc: &api::geo::Location) -> Result<ImageSurface> {
+pub fn render(weather: &api::Onecall, loc: &api::geo::Location) -> Result<ImageSurface> {
   let img = ImageSurface::create(Format::Rgb24, SCALE * IMAGE_W, SCALE * IMAGE_H)?;
   let ctx = Context::new(&img)?;
   ctx.scale1(SCALE as f64);

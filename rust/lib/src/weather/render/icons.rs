@@ -1,29 +1,19 @@
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::fs;
 
-use ::c::bindings as c;
-use ::c::rsvg::Handle as Rsvg;
+use c::bindings::RsvgRectangle;
+use c::rsvg::Handle as Rsvg;
 
-pub fn icon<T>(name: &'static str, f: &dyn Fn(&Rsvg, c::RsvgRectangle) -> T) -> T {
-  thread_local! {
-    static ICONS: RefCell<HashMap<&'static str, Rsvg>> = HashMap::new().into();
-  }
+use super::Result;
 
-  ICONS.with(|icons| {
-    let mut icons = icons.borrow_mut();
-    let icon = icons.entry(name).or_insert_with(|| {
-      let path = format!("assets/icons/weather/{name}.svg");
-      let file = fs::read(path).unwrap();
-      Rsvg::from_data(&file).unwrap()
-    });
-    let size = icon.intrinsic_dimensions().viewbox.unwrap();
-    f(icon, size)
-  })
+pub fn icon(name: &'static str) -> Result<(Rsvg, RsvgRectangle)> {
+  let file = fs::read(format!("assets/icons/weather/{name}.svg"))?;
+  let icon = Rsvg::from_data(&file)?;
+  let size = icon.intrinsic_dimensions().viewbox.unwrap();
+  Ok((icon, size))
 }
 
-pub fn openweather<T>(name: &str, f: &dyn Fn(&Rsvg, c::RsvgRectangle) -> T) -> T {
-  let name = match name {
+pub fn openweather(name: &str) -> Result<(Rsvg, RsvgRectangle)> {
+  icon(match name {
     "01d" => "clear-day",
     "01n" => "clear-night",
     "02d" => "partly-cloudy-day",
@@ -36,7 +26,6 @@ pub fn openweather<T>(name: &str, f: &dyn Fn(&Rsvg, c::RsvgRectangle) -> T) -> T
     "13d" => "partly-cloudy-day-snow",
     "13n" => "partly-cloudy-night-snow",
     "50d" | "50n" => "mist",
-    _ => unreachable!(),
-  };
-  icon(name, f)
+    _ => panic!(),
+  })
 }

@@ -11,7 +11,7 @@ use super::range::Range;
 use super::Result;
 use super::*;
 
-pub fn hourly(ctx: &Context, weather: &api::onecall::Root) -> Result<()> {
+pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   let height = 40.0;
   let width = 48.0 * 10.0;
   let w = width / weather.hourly.len() as f64;
