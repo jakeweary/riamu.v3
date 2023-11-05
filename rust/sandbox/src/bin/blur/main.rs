@@ -8,10 +8,8 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 type Result<T> = std::result::Result<T, Error>;
 
 fn main() -> Result<()> {
-  let img = render()?;
-  let path = format!("_/blur.png");
-  let mut file = File::create(path)?;
-  img.write_to_png(&mut file)?;
+  let mut file = File::create("_/blur.png")?;
+  render()?.write_to_png(&mut file)?;
 
   Ok(())
 }

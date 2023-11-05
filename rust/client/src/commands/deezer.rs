@@ -48,9 +48,10 @@ async fn deezer(ctx: &Context<'_>, query: &str, with_banner: bool) -> Result<()>
   tracing::debug!("downloading…");
   ctx.progress("downloading…").await?;
   let tempdir = tempfile::tempdir()?;
-  let track = {
+  let info = {
     let tempdir = tempdir.path().to_owned();
-    task::spawn_blocking(move || dz::download(&url, &quality, &tempdir)).await??
+    let info = task::spawn_blocking(move || dz::download(&url, &quality, &tempdir)).await?;
+    info? // FIXME: should figure out a way to handle that PyErr
   };
 
   let Some(Ok(file)) = std::fs::read_dir(&tempdir)?.next() else {
@@ -64,16 +65,16 @@ async fn deezer(ctx: &Context<'_>, query: &str, with_banner: bool) -> Result<()>
 
   tracing::debug!("caching…");
   let url = {
-    let name = format!("{} - {}.{}", track.artist.name, track.title, fext);
+    let name = format!("{} - {}.{}", info.artist.name, info.title, fext);
     ctx.client.cache.store_file(&fpath, Name::Set(&name)).await?.unwrap()
   };
 
   if with_banner {
     let content = {
       let mut acc = String::new();
-      write!(acc, "[track](<https://deezer.com/track/{}>) ", track.id)?;
-      write!(acc, "[artist](<https://deezer.com/artist/{}>) ", track.artist.id)?;
-      write!(acc, "[album](<https://deezer.com/album/{}>) ", track.album.id)?;
+      write!(acc, "[track](<https://deezer.com/track/{}>) ", info.id)?;
+      write!(acc, "[artist](<https://deezer.com/artist/{}>) ", info.artist.id)?;
+      write!(acc, "[album](<https://deezer.com/album/{}>) ", info.album.id)?;
       write!(acc, "\u{205D} [{}]({}) {}B", fext, escape(url.as_str()), fsize.iec())?;
       acc
     };
@@ -96,8 +97,8 @@ async fn deezer(ctx: &Context<'_>, query: &str, with_banner: bool) -> Result<()>
     ctx.event.edit_response(ctx, edit).await?;
   } else {
     let content = {
-      let (artist, artist_id) = (&track.artist.name, track.artist.id);
-      let (track, track_id) = (&track.title, track.id);
+      let (artist, artist_id) = (&info.artist.name, info.artist.id);
+      let (track, track_id) = (&info.title, info.id);
       let mut acc = String::new();
       write!(acc, "[{}](<https://deezer.com/artist/{}>) \u{2013} ", artist, artist_id)?;
       write!(acc, "[{}](<https://deezer.com/track/{}>) ", track, track_id)?;

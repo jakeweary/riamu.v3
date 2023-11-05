@@ -79,6 +79,7 @@ struct FormatSelector {
 #[pymethods]
 impl FormatSelector {
   fn __call__(&mut self, ctx: &PyAny) -> PyResult<Py<PyList>> {
+    // FIXME: panics on playlists, should do something about it
     let f = self.f.take().expect("should be called only once");
     f(ctx.py(), ctx.extract()?)
   }

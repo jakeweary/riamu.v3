@@ -18,7 +18,7 @@ pub fn gaussian_blur(srf: &mut cairo::ImageSurface, sigma: f32) -> cairo::Result
     let k1 = 0.5 / (sigma * sigma);
     let f = |x: f32| k0 * (-k1 * x * x).exp();
     let lut: Vec<_> = (0..=radius).map(|i| f(i as f32)).collect();
-    move |x: i32| unsafe { *lut.get_unchecked(x.abs() as usize) }
+    move |x: i32| unsafe { *lut.get_unchecked(x.unsigned_abs() as usize) }
   };
 
   let srgb_u8_eotf = {
@@ -73,6 +73,8 @@ pub fn gaussian_blur(srf: &mut cairo::ImageSurface, sigma: f32) -> cairo::Result
 
 mod srgb {
   pub mod f32 {
+    #![allow(clippy::excessive_precision)]
+
     pub fn oetf(x: f32) -> f32 {
       match x {
         x if x > 0.00313066844250063 => 1.055 * x.powf(1.0 / 2.4) - 0.055,

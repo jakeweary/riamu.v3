@@ -36,7 +36,7 @@ pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {
 
   let mut edit = EditInteractionResponse::new();
   let embed = CreateEmbed::new()
-    .description(&post.render(domain))
+    .description(post.render(domain))
     .author(CreateEmbedAuthor::new(&op.subject).url(&url))
     .footer(CreateEmbedFooter::new(footer))
     .timestamp(Timestamp::from_unix_timestamp(post.timestamp)?);

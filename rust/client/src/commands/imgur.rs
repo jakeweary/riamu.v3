@@ -43,6 +43,8 @@ async fn upload(ctx: &Context<'_>, url: &str, filename: &str) -> Result<()> {
   let url = format!("https://imgur.com/{}", json.data.id);
   tracing::debug!(%url, "uploaded");
 
+  // TODO: probably should insert some kind of delay
+  // to avoid the 404 thumbnail issue
   tracing::debug!("sending response…");
   let edit = EditInteractionResponse::new().content(url);
   ctx.event.edit_response(ctx, edit).await?;

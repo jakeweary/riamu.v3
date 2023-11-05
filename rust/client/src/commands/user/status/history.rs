@@ -22,7 +22,7 @@ pub async fn run(
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("querying database…");
-  let statuses = db::statuses::query(&ctx.client.db, user.id, "-30 days").await?;
+  let statuses = db::statuses::query(&ctx.client.db, user.id, "-31 days").await?;
 
   tracing::debug!("rendering image…");
   let png = task::spawn_blocking(move || -> Result<_> {
@@ -161,12 +161,12 @@ where
   let mut img = ImageSurface::create(Format::ARgb32, w, h)?;
   let mut data = img.data().unwrap();
 
-  let mut draw = |status: statuses::Packed, start, end| {
+  let mut draw = |packed: statuses::Packed, start, end| {
     let i0 = (tomorrow - end) as usize / px;
     let i1 = (tomorrow - start) as usize / px;
 
     if i0 != i1 {
-      let color = match status.status() {
+      let color = match packed.status() {
         OnlineStatus::Offline => 0xff_80848e_u32.to_be_bytes(),
         OnlineStatus::Online => 0xff_23a55a_u32.to_be_bytes(),
         OnlineStatus::Idle => 0xff_f0b232_u32.to_be_bytes(),
@@ -185,12 +185,12 @@ where
     }
   };
 
-  for [prev, curr] in statuses.array_windows() {
-    draw(prev.status, prev.time, curr.time);
+  for [start, end] in statuses.array_windows() {
+    draw(start.status, start.time, end.time);
   }
 
-  if let Some(status) = statuses.last() {
-    draw(status.status, status.time, now);
+  if let Some(last) = statuses.last() {
+    draw(last.status, last.time, now);
   }
 
   data.reverse();
