@@ -12,9 +12,16 @@ pub mod statuses;
 pub mod users;
 
 pub async fn init(url: &str) -> sqlx::Result<Pool> {
+  let options = SqliteConnectOptions::from_str(url)?
+    .synchronous(SqliteSynchronous::Full)
+    .locking_mode(SqliteLockingMode::Exclusive)
+    .journal_mode(SqliteJournalMode::Wal);
+
   tracing::debug!("initializing database connection…");
-  let options = SqliteConnectOptions::from_str(url)?;
-  let pool = SqlitePoolOptions::new().connect_with(options).await?;
+  let pool = SqlitePoolOptions::new()
+    .max_connections(1)
+    .connect_with(options)
+    .await?;
 
   tracing::debug!("applying all pending migrations…");
   sqlx::migrate!("../../migrations").run(&pool).await?;
