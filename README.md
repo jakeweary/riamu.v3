@@ -11,15 +11,11 @@ Rename `.env.example` to `.env` and fill it with actual values.
 ### Running in prod
 
 ```sh
-scripts/download-assets
+scripts/get-assets
 
 docker compose up -d # launch
 docker compose logs -f # check logs
 docker compose down # shutdown
-
-# explore the database
-docker run --volumes-from riamu.v3 --rm -it alpine \
-  sh -c 'apk add sqlite && sqlite3 -header -column /app/data/db.sqlite'
 ```
 
 ### Development
@@ -29,7 +25,7 @@ docker run --volumes-from riamu.v3 --rm -it alpine \
 ```sh
 sudo apt update
 sudo apt install -y \
-  python3 python3-pip ffmpeg curl git build-essential pkg-config clang \
+  python3 python3-pip ffmpeg sqlite3 curl git build-essential pkg-config clang \
   python3-dev llvm-dev libclang-dev libssl-dev libpango1.0-dev libcairo2-dev librsvg2-dev
 
 curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
@@ -38,7 +34,8 @@ rustup toolchain install nightly
 python3 -m pip install --user pipenv
 pipenv install --dev
 
-scripts/download-assets
+scripts/get-assets
+scripts/get-deps
 ```
 
 #### Building / Running
@@ -57,8 +54,29 @@ pipenv run target/release/riamu # run the release build w/o cargo
 #### Testing
 
 ```sh
-pipenv run cargo test --workspace
-pipenv run pytest -v -n auto --dist loadscope python
+pipenv run cargo test --workspace # rust
+pipenv run pytest -v -n auto --dist loadscope python # python
+```
+
+#### Linting with clippy
+
+```sh
+cargo clippy --workspace # just lint
+cargo clippy --workspace --fix --allow-dirty --allow-staged --broken-code # lint & fix
+```
+
+### Misc.
+
+```sh
+# acquire prod database over ssh
+ssh foo@bar.baz 'docker cp riamu.v3:/app/data - | gzip' | tar -xzvv --strip-components=1
+
+# query local database
+sqlite3 -header -box -cmd '.load deps/sqlean' db.sqlite
+
+# query dockerized database
+docker run --volumes-from riamu.v3 --rm -it alpine \
+  sh -c 'apk add sqlite && sqlite3 -header -box /app/data/db.sqlite'
 ```
 
 ## Roadmap

@@ -1,6 +1,7 @@
 /.cache
 /.env
 /assets
+/deps
 /target
 /db.*
 __pycache__

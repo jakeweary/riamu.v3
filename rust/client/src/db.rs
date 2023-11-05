@@ -15,7 +15,8 @@ pub async fn init(url: &str) -> sqlx::Result<Pool> {
   let options = SqliteConnectOptions::from_str(url)?
     .synchronous(SqliteSynchronous::Full)
     .locking_mode(SqliteLockingMode::Exclusive)
-    .journal_mode(SqliteJournalMode::Wal);
+    .journal_mode(SqliteJournalMode::Wal)
+    .extension("deps/sqlean");
 
   tracing::debug!("initializing database connection…");
   let pool = SqlitePoolOptions::new()

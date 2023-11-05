@@ -5,7 +5,7 @@ services:
     build: .
     env_file: .env
     environment:
-      - DATABASE_URL=sqlite:///app/data/db.sqlite?mode=rwc
+      - DATABASE_URL=sqlite://data/db.sqlite?mode=rwc
       - CACHE_WORKING_DIR=/app/cache
       - CACHE_BASE_URL=https://riamu.desu.dedyn.io/
       - CACHE_LIMIT_GiB=10
