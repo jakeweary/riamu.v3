@@ -1,5 +1,3 @@
-use sqlx::query_builder::Separated;
-
 use super::*;
 
 #[derive(sqlx::FromRow)]
@@ -13,19 +11,16 @@ pub async fn all(pool: &Pool) -> sqlx::Result<Vec<Counter>> {
   q.fetch_all(pool).await
 }
 
-pub async fn increment<F>(pool: &Pool, f: F) -> sqlx::Result<QueryResult>
-where
-  F: FnOnce(&mut Separated<'_, '_, Database, &str>),
-{
-  let mut q = QueryBuilder::new(
-    " update counters set count = count + 1
-      where name in ",
-  );
-
-  let mut sep = q.separated(", ");
-  sep.push_unseparated("(");
-  f(&mut sep);
-  sep.push_unseparated(")");
-
+pub async fn increment(pool: &Pool, pairs: &[(&str, u32)]) -> sqlx::Result<QueryResult> {
+  let mut q = QueryBuilder::new("insert into counters values");
+  let mut qs = q.separated(", ");
+  for &(name, value) in pairs {
+    qs.push("(")
+      .push_bind_unseparated(name)
+      .push_unseparated(", ")
+      .push_bind_unseparated(value)
+      .push_unseparated(")");
+  }
+  q.push("on conflict do update set count = excluded.count + count");
   q.build().execute(pool).await
 }

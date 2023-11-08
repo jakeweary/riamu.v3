@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use sqlx::sqlite::*;
 
-pub type Database = Sqlite;
 pub type Pool = sqlx::Pool<Sqlite>;
 pub type QueryBuilder<'a> = sqlx::QueryBuilder<'a, Sqlite>;
 pub type QueryResult = SqliteQueryResult;

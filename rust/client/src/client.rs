@@ -286,16 +286,11 @@ impl serenity::RawEventHandler for Client {
       }
     }
 
-    let inc = db::counters::increment(&self.db, |names| {
-      names.push_bind("events");
-      if messages > 0 {
-        names.push_bind("messages");
-      }
-      if commands > 0 {
-        names.push_bind("commands");
-      }
-    });
-    inc.await.unwrap();
+    {
+      let pairs = [("events", 1), ("messages", messages), ("commands", commands)];
+      let inc = db::counters::increment(&self.db, &pairs);
+      inc.await.unwrap();
+    }
 
     if let Some(uid) = user_id {
       let upsert = db::users::upsert(&self.db, uid, user_name, messages, commands);
