@@ -32,7 +32,7 @@ pub async fn run(
   };
   tracing::debug!("extracted {} formats", dl_ctx.formats.len());
 
-  let format_ids = select_format_ids(ctx, &dl_ctx.formats).await?;
+  let format_ids = select_format_ids(ctx, &dl_ctx).await?;
   tracing::debug!("selected {} formats", format_ids.len());
 
   tracing::debug!("downloading…");
@@ -46,7 +46,7 @@ pub async fn run(
   let fpath = file.path();
   let fname = fpath.file_name().unwrap().to_string_lossy();
   let fsize = fpath.metadata()?.len();
-  tracing::debug!(file = %fname, "downloaded {}B", fsize.iec());
+  tracing::debug!(file = ?fname, "downloaded {}B", fsize.iec());
 
   let content = format!("[{}](<{}>)", info.title, info.webpage_url);
 
@@ -144,8 +144,8 @@ async fn select_video_url(ctx: &Context<'_>, videos: &[search::Result]) -> Resul
   Ok(url)
 }
 
-async fn select_format_ids(ctx: &Context<'_>, formats: &[download::Format]) -> Result<Vec<String>> {
-  let formats = formats.iter().rev().collect::<Vec<_>>();
+async fn select_format_ids(ctx: &Context<'_>, dl_ctx: &download::Context) -> Result<Vec<String>> {
+  let formats = dl_ctx.formats.iter().rev().collect::<Vec<_>>();
   let videos = formats.iter().filter(|f| f.is_video()).collect::<Vec<_>>();
   let audios = formats.iter().filter(|f| f.is_audio()).collect::<Vec<_>>();
 
@@ -154,14 +154,14 @@ async fn select_format_ids(ctx: &Context<'_>, formats: &[download::Format]) -> R
   }
 
   let video_selector = CreateActionRow::SelectMenu({
-    let options = videos.into_iter().take(25).map(|&fmt| {
-      let size = fmt.size().unwrap_or(0).iec();
-      let vcodec = fmt.vcodec.as_deref().unwrap_or("unknown");
-      let desc = format!("{}B · {} · {}", size, fmt.ext, vcodec);
+    let options = videos.into_iter().take(25).map(|&f| {
+      let size = fmt_size(&dl_ctx, f);
+      let codec = fmt_codec(f.vcodec.as_deref());
+      let desc = format!("{} · {} · {}", size, codec, f.ext);
 
-      let label = fmt::ellipsis(&fmt.format, 100);
+      let label = fmt::ellipsis(&f.format, 100);
       let desc = fmt::ellipsis(&desc, 100);
-      CreateSelectMenuOption::new(label, &fmt.format_id).description(desc)
+      CreateSelectMenuOption::new(label, &f.format_id).description(desc)
     });
 
     let options = options.collect();
@@ -171,14 +171,14 @@ async fn select_format_ids(ctx: &Context<'_>, formats: &[download::Format]) -> R
   });
 
   let audio_selector = CreateActionRow::SelectMenu({
-    let options = audios.into_iter().take(25).map(|&fmt| {
-      let size = fmt.size().unwrap_or(0).iec();
-      let acodec = fmt.acodec.as_deref().unwrap_or("unknown");
-      let desc = format!("{}B · {} · {}", size, fmt.ext, acodec);
+    let options = audios.into_iter().take(25).map(|&f| {
+      let size = fmt_size(&dl_ctx, f);
+      let codec = fmt_codec(f.acodec.as_deref());
+      let desc = format!("{} · {} · {}", size, codec, f.ext);
 
-      let label = fmt::ellipsis(&fmt.format, 100);
+      let label = fmt::ellipsis(&f.format, 100);
       let desc = fmt::ellipsis(&desc, 100);
-      CreateSelectMenuOption::new(label, &fmt.format_id).description(desc)
+      CreateSelectMenuOption::new(label, &f.format_id).description(desc)
     });
 
     let options = options.collect();
@@ -228,5 +228,37 @@ async fn select_format_ids(ctx: &Context<'_>, formats: &[download::Format]) -> R
 
       return Ok(vec![video, audio]);
     }
+  }
+}
+
+// ---
+
+fn fmt_size(ctx: &download::Context, f: &download::Format) -> String {
+  if let Some(bytes) = f.filesize {
+    format!("\u{feff}\u{2000}{}B", bytes.iec())
+  } else if let Some(bytes) = f.filesize_approx {
+    format!("≈{}B", bytes.iec())
+  } else if let (Some(duration), Some(tbr)) = (ctx.duration, f.tbr) {
+    format!("~{}B", (1024.0 / 8.0 * tbr * duration).iec())
+  } else {
+    format!("unknown size")
+  }
+}
+
+fn fmt_codec(input: Option<&str>) -> &'static str {
+  let left = input.and_then(|input| {
+    let (left, _right) = input.split_once('.')?;
+    Some(left)
+  });
+
+  match left.or(input) {
+    Some("avc1" | "h264") => "H.264",
+    Some("hvc1" | "h265") => "H.265",
+    Some("av01" | "av1") => "AV1",
+    Some("vp08" | "vp8") => "VP8",
+    Some("vp09" | "vp9") => "VP9",
+    Some("mp4a" | "aac") => "AAC",
+    Some("opus") => "Opus",
+    _ => "unknown codec",
   }
 }

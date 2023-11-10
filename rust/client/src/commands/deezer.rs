@@ -61,7 +61,7 @@ async fn deezer(ctx: &Context<'_>, query: &str, with_banner: bool) -> Result<()>
   let fext = fpath.extension().and_then(|e| e.to_str()).unwrap();
   let fname = fpath.file_name().unwrap().to_string_lossy();
   let fsize = fpath.metadata()?.len();
-  tracing::debug!(file = %fname, "downloaded {}B", fsize.iec());
+  tracing::debug!(file = ?fname, "downloaded {}B", fsize.iec());
 
   tracing::debug!("caching…");
   let url = {
