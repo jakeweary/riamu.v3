@@ -12,14 +12,14 @@ pub mod users;
 
 pub async fn init(url: &str) -> sqlx::Result<Pool> {
   let options = SqliteConnectOptions::from_str(url)?
-    .synchronous(SqliteSynchronous::Full)
-    .locking_mode(SqliteLockingMode::Exclusive)
+    .synchronous(SqliteSynchronous::Normal)
+    .locking_mode(SqliteLockingMode::Normal)
     .journal_mode(SqliteJournalMode::Wal)
     .extension("deps/sqlean");
 
   tracing::debug!("initializing database connection…");
   let pool = SqlitePoolOptions::new()
-    .max_connections(1)
+    .max_connections(4)
     .connect_with(options)
     .await?;
 
