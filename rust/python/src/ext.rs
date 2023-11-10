@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use pyo3::{prelude::*, types::*};
 
 pub trait DictExt<'a> {
@@ -8,7 +10,7 @@ pub trait DictExt<'a> {
 
   fn extract_optional<T, K>(self, key: K) -> PyResult<Option<T>>
   where
-    T: FromPyObject<'a> + AsRef<str>,
+    T: FromPyObject<'a> + Any,
     K: ToPyObject;
 }
 
@@ -27,14 +29,18 @@ impl<'a> DictExt<'a> for &'a PyDict {
 
   fn extract_optional<T, K>(self, key: K) -> PyResult<Option<T>>
   where
-    T: FromPyObject<'a> + AsRef<str>,
+    T: FromPyObject<'a> + Any,
     K: ToPyObject,
   {
     self.get_item(key)?.map_or(Ok(None), |item| {
       Ok(match item.extract::<Option<T>>()? {
-        Some(item) if item.as_ref() != "none" => Some(item),
+        Some(item) if !is_none(&item) => Some(item),
         _ => None,
       })
     })
   }
+}
+
+fn is_none(item: &dyn Any) -> bool {
+  item.downcast_ref::<String>().is_some_and(|s| s == "none")
 }

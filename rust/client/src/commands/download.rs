@@ -23,22 +23,22 @@ pub async fn run(
 
   tracing::debug!("initializing donwloader…");
   let tempdir = tempfile::tempdir()?;
-  let downloader = Downloader::new(url, &tempdir);
+  let dl = Downloader::new(url, &tempdir);
 
   tracing::debug!("extracting formats…");
   ctx.progress("extracting formats…").await?;
-  let Ok(formats) = downloader.formats.await else {
+  let Ok(dl_ctx) = dl.context.await else {
     err::message!("failed to extract formats");
   };
-  tracing::debug!("extracted {} formats", formats.len());
+  tracing::debug!("extracted {} formats", dl_ctx.formats.len());
 
-  let format_ids = select_format_ids(ctx, &formats).await?;
+  let format_ids = select_format_ids(ctx, &dl_ctx.formats).await?;
   tracing::debug!("selected {} formats", format_ids.len());
 
   tracing::debug!("downloading…");
   ctx.progress("downloading…").await?;
-  downloader.selected.send(format_ids).unwrap();
-  let info = downloader.finish.await??;
+  dl.selected.send(format_ids).unwrap();
+  let info = dl.finish.await??;
 
   let Some(Ok(file)) = fs::read_dir(&tempdir)?.next() else {
     err::message!("failed to download");

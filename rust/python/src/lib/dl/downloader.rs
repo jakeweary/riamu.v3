@@ -8,8 +8,8 @@ use tokio::task::JoinHandle;
 use super::download::*;
 
 pub struct Downloader {
-  /// STEP 1: get all available formats
-  pub formats: oneshot::Receiver<Vec<Format>>,
+  /// STEP 1: get context with all available formats
+  pub context: oneshot::Receiver<Context>,
   /// STEP 2: select 1 or 2 formats and send back their ids
   pub selected: oneshot::Sender<Vec<String>>,
   /// STEP 3: finish downloading
@@ -19,15 +19,15 @@ pub struct Downloader {
 impl Downloader {
   /// STEP 0: init `Downloader` struct
   pub fn new(url: impl ToString, out_dir: impl AsRef<Path>) -> Self {
-    let (formats_tx, formats_rx) = oneshot::channel();
-    let (selected_tx, selected_rx) = oneshot::channel::<Vec<String>>();
+    let (context_in, context_out) = oneshot::channel();
+    let (selected_in, selected_out) = oneshot::channel::<Vec<String>>();
 
-    let fs = |py: Python<'_>, ctx: DownloadContext| {
+    let fs = |py: Python<'_>, ctx: Context| {
       tracing::trace!("format selector: sending available formats…");
-      formats_tx.send(ctx.formats).map_err(drop).unwrap();
+      context_in.send(ctx).map_err(drop).unwrap();
 
       tracing::trace!("format selector: receiving selected formats…");
-      match py.allow_threads(|| selected_rx.blocking_recv()) {
+      match py.allow_threads(|| selected_out.blocking_recv()) {
         Ok(selected) => {
           tracing::trace!("format selector: done");
           Ok(PyList::new(py, selected).into())
@@ -61,8 +61,8 @@ impl Downloader {
     });
 
     Self {
-      formats: formats_rx,
-      selected: selected_tx,
+      context: context_out,
+      selected: selected_in,
       finish: join,
     }
   }
@@ -73,7 +73,7 @@ impl Downloader {
 #[pyclass]
 struct FormatSelector {
   #[allow(clippy::type_complexity)]
-  f: Option<Box<dyn FnOnce(Python<'_>, DownloadContext) -> PyResult<Py<PyList>> + Send>>,
+  f: Option<Box<dyn FnOnce(Python<'_>, Context) -> PyResult<Py<PyList>> + Send>>,
 }
 
 #[pymethods]

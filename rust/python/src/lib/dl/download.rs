@@ -10,9 +10,8 @@ pub struct Result {
   pub webpage_url: String,
 }
 
-#[derive(FromPyObject)]
-#[pyo3(from_item_all)]
-pub struct DownloadContext {
+pub struct Context {
+  pub duration: Option<f64>,
   pub formats: Vec<Format>,
   pub has_merged_format: bool,
   pub incomplete_formats: bool,
@@ -37,10 +36,22 @@ pub struct Format {
   pub vcodec: Option<String>,
 }
 
+impl<'a> FromPyObject<'a> for Context {
+  fn extract(any: &'a PyAny) -> PyResult<Self> {
+    let dict: &PyDict = any.extract()?;
+    Ok(Self {
+      duration: dict.extract_optional("duration")?,
+      formats: dict.extract("formats")?,
+      has_merged_format: dict.extract("has_merged_format")?,
+      incomplete_formats: dict.extract("incomplete_formats")?,
+    })
+  }
+}
+
 impl<'a> FromPyObject<'a> for Format {
   fn extract(any: &'a PyAny) -> PyResult<Self> {
     let dict: &PyDict = any.extract()?;
-    Ok(Format {
+    Ok(Self {
       format: dict.extract("format")?,
       format_id: dict.extract("format_id")?,
       // ---

@@ -1,6 +1,6 @@
 import logging
 from operator import itemgetter
-from typing import Any, Callable, Generator, Optional
+from typing import Any, Callable, Optional
 
 from yt_dlp import YoutubeDL
 
@@ -15,12 +15,11 @@ Info = dict[str, Any]
 Format = dict[str, Any]
 FormatId = str
 FormatSelectorContext = dict[str, Any]
-FormatSelectorWrapped = Callable[[FormatSelectorContext], Generator[Format, None, None]]
 FormatSelector = Callable[[FormatSelectorContext], list[FormatId]]
 
 def download(url: str, out_dir: str, fs: Optional[FormatSelector] = None, **kwargs: Any) -> Info:
-  format = _wrap_format_selector(fs) if fs else None
-  params = _defaults() | {'paths': {'home': out_dir}, 'format': format} | kwargs
+  format = _wrap_format_selector(fs) if fs else {}
+  params = _defaults() | {'paths': {'home': out_dir}} | format | kwargs
   with YoutubeDL(params) as ydl:
     return ydl.extract_info(url) # type: ignore
 
@@ -46,13 +45,19 @@ def _defaults() -> Params:
     ],
   } # yapf: disable (https://github.com/google/yapf/issues/1015)
 
-def _wrap_format_selector(fs: FormatSelector) -> FormatSelectorWrapped:
-  def wrapped(ctx: FormatSelectorContext):
+def _wrap_format_selector(fs: FormatSelector) -> Params:
+  info_ref: Info = {}
+
+  def match_filter(info: Info, *, incomplete: Any):
+    nonlocal info_ref
+    info_ref = info
+
+  def format(ctx: FormatSelectorContext):
     formats_dict = {fmt['format_id']: fmt for fmt in ctx['formats']}
-    formats = [formats_dict[fmt_id] for fmt_id in fs(ctx)]
+    formats = [formats_dict[fmt_id] for fmt_id in fs(info_ref | ctx)]
     yield _merge_formats(formats) if len(formats) > 1 else formats[0]
 
-  return wrapped
+  return {'match_filter': match_filter, 'format': format}
 
 def _merge_formats(formats: list[Format]) -> Format:
   # https://github.com/yt-dlp/yt-dlp#use-a-custom-format-selector
