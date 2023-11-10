@@ -41,6 +41,8 @@ impl<'a> DictExt<'a> for &'a PyDict {
   }
 }
 
-fn is_none(item: &dyn Any) -> bool {
-  item.downcast_ref::<String>().is_some_and(|s| s == "none")
+fn is_none(any: &dyn Any) -> bool {
+  let a = any.downcast_ref().map(|s: &String| &**s);
+  let b = any.downcast_ref().map(|s: &&str| *s);
+  a.or(b).is_some_and(|s| s == "none")
 }
