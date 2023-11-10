@@ -155,7 +155,7 @@ async fn select_format_ids(ctx: &Context<'_>, dl_ctx: &download::Context) -> Res
 
   let video_selector = CreateActionRow::SelectMenu({
     let options = videos.into_iter().take(25).map(|&f| {
-      let size = fmt_size(&dl_ctx, f);
+      let size = fmt_size(dl_ctx, f);
       let codec = fmt_codec(f.vcodec.as_deref());
       let desc = format!("{} · {} · {}", size, codec, f.ext);
 
@@ -172,7 +172,7 @@ async fn select_format_ids(ctx: &Context<'_>, dl_ctx: &download::Context) -> Res
 
   let audio_selector = CreateActionRow::SelectMenu({
     let options = audios.into_iter().take(25).map(|&f| {
-      let size = fmt_size(&dl_ctx, f);
+      let size = fmt_size(dl_ctx, f);
       let codec = fmt_codec(f.acodec.as_deref());
       let desc = format!("{} · {} · {}", size, codec, f.ext);
 
@@ -241,7 +241,7 @@ fn fmt_size(ctx: &download::Context, f: &download::Format) -> String {
   } else if let (Some(duration), Some(tbr)) = (ctx.duration, f.tbr) {
     format!("~{}B", (1024.0 / 8.0 * tbr * duration).iec())
   } else {
-    format!("unknown size")
+    "unknown size".into()
   }
 }
 

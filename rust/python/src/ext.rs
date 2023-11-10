@@ -42,6 +42,7 @@ impl<'a> DictExt<'a> for &'a PyDict {
 }
 
 fn is_none(any: &dyn Any) -> bool {
+  #![allow(clippy::map_clone)]
   let a = any.downcast_ref().map(|s: &String| &**s);
   let b = any.downcast_ref().map(|s: &&str| *s);
   a.or(b).is_some_and(|s| s == "none")
