@@ -10,30 +10,13 @@ pub struct Result {
   pub webpage_url: String,
 }
 
+// ---
+
 pub struct Context {
   pub duration: Option<f64>,
   pub formats: Vec<Format>,
   pub has_merged_format: bool,
   pub incomplete_formats: bool,
-}
-
-pub struct Format {
-  pub format: String,
-  pub format_id: String,
-  // ---
-  pub filesize: Option<i64>,
-  pub filesize_approx: Option<i64>,
-  // ---
-  pub ext: String,
-  pub audio_ext: Option<String>,
-  pub video_ext: Option<String>,
-  // ---
-  pub abr: Option<f64>,
-  pub vbr: Option<f64>,
-  pub tbr: Option<f64>,
-  // ---
-  pub acodec: Option<String>,
-  pub vcodec: Option<String>,
 }
 
 impl<'a> FromPyObject<'a> for Context {
@@ -48,26 +31,39 @@ impl<'a> FromPyObject<'a> for Context {
   }
 }
 
+// ---
+
+pub struct Format {
+  pub format: String,
+  pub format_id: String,
+  pub filesize: Option<i64>,
+  pub filesize_approx: Option<i64>,
+  pub ext: String,
+  pub audio_ext: Option<String>,
+  pub video_ext: Option<String>,
+  pub acodec: Option<String>,
+  pub vcodec: Option<String>,
+  pub abr: Option<f64>,
+  pub vbr: Option<f64>,
+  pub tbr: Option<f64>,
+}
+
 impl<'a> FromPyObject<'a> for Format {
   fn extract(any: &'a PyAny) -> PyResult<Self> {
     let dict: &PyDict = any.extract()?;
     Ok(Self {
       format: dict.extract("format")?,
       format_id: dict.extract("format_id")?,
-      // ---
       filesize: dict.extract("filesize")?,
       filesize_approx: dict.extract("filesize_approx")?,
-      // ---
       ext: dict.extract("ext")?,
       audio_ext: dict.extract_optional("audio_ext")?,
       video_ext: dict.extract_optional("video_ext")?,
-      // ---
+      acodec: dict.extract_optional("acodec")?,
+      vcodec: dict.extract_optional("vcodec")?,
       abr: dict.extract("abr")?,
       vbr: dict.extract("vbr")?,
       tbr: dict.extract("tbr")?,
-      // ---
-      acodec: dict.extract_optional("acodec")?,
-      vcodec: dict.extract_optional("vcodec")?,
     })
   }
 }
