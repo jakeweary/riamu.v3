@@ -32,12 +32,13 @@ pub async fn run(
   };
   tracing::debug!("extracted {} formats", dl_ctx.formats.len());
 
-  let format_ids = select_format_ids(ctx, &dl_ctx).await?;
-  tracing::debug!("selected {} formats", format_ids.len());
+  let selected_ids = select_format_ids(ctx, &dl_ctx).await?;
+  let selected = dl_ctx.resolve(&selected_ids).unwrap();
+  tracing::debug!("selected {} formats", selected_ids.len());
 
   tracing::debug!("downloading…");
   ctx.progress("downloading…").await?;
-  dl.selected.send(format_ids).unwrap();
+  dl.selected.send(selected_ids).unwrap();
   let info = dl.finish.await??;
 
   let Some(Ok(file)) = fs::read_dir(&tempdir)?.next() else {
@@ -55,7 +56,10 @@ pub async fn run(
     let name = format!("{}.{}", info.title, ext);
 
     tracing::debug!("caching…");
-    let url = ctx.client.cache.store_file(&fpath, Name::Set(&name)).await?.unwrap();
+    let mut url = ctx.client.cache.store_file(&fpath, Name::Set(&name)).await?.unwrap();
+    if let Some(params) = fmt_embed_params(&info, &selected) {
+      url.set_query(Some(&params))
+    }
 
     let content = format!("{} \u{205D} [{}]({}) {}B", content, ext, url, fsize.iec());
     let edit = EditInteractionResponse::new()
@@ -232,6 +236,12 @@ async fn select_format_ids(ctx: &Context<'_>, dl_ctx: &download::Context) -> Res
 }
 
 // ---
+
+fn fmt_embed_params(info: &download::Info, selected: &[&download::Format]) -> Option<String> {
+  let first = selected.first()?;
+  let (w, h, img) = (first.width?, first.height?, info.thumbnail.as_ref()?);
+  Some(format!("{w}:{h}:{img}"))
+}
 
 fn fmt_size(ctx: &download::Context, f: &download::Format) -> String {
   if let Some(bytes) = f.filesize {

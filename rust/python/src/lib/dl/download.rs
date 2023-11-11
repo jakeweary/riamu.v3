@@ -2,12 +2,23 @@ use pyo3::{prelude::*, types::*};
 
 use crate::ext::DictExt;
 
-#[derive(FromPyObject)]
-#[pyo3(from_item_all)]
-pub struct Result {
+pub struct Info {
   pub id: String,
   pub title: String,
   pub webpage_url: String,
+  pub thumbnail: Option<String>,
+}
+
+impl<'a> FromPyObject<'a> for Info {
+  fn extract(any: &'a PyAny) -> PyResult<Self> {
+    let dict: &PyDict = any.extract()?;
+    Ok(Self {
+      id: dict.extract("id")?,
+      title: dict.extract("title")?,
+      webpage_url: dict.extract("webpage_url")?,
+      thumbnail: dict.extract_optional("thumbnail")?,
+    })
+  }
 }
 
 // ---
@@ -31,6 +42,15 @@ impl<'a> FromPyObject<'a> for Context {
   }
 }
 
+impl Context {
+  pub fn resolve(&self, format_ids: &'_ [impl AsRef<str>]) -> Option<Vec<&Format>> {
+    format_ids
+      .iter()
+      .map(|id| self.formats.iter().find(|f| f.format_id == id.as_ref()))
+      .collect()
+  }
+}
+
 // ---
 
 pub struct Format {
@@ -46,6 +66,8 @@ pub struct Format {
   pub abr: Option<f64>,
   pub vbr: Option<f64>,
   pub tbr: Option<f64>,
+  pub width: Option<u64>,
+  pub height: Option<u64>,
 }
 
 impl<'a> FromPyObject<'a> for Format {
@@ -64,20 +86,18 @@ impl<'a> FromPyObject<'a> for Format {
       abr: dict.extract("abr")?,
       vbr: dict.extract("vbr")?,
       tbr: dict.extract("tbr")?,
+      width: dict.extract_optional("width")?,
+      height: dict.extract_optional("height")?,
     })
   }
 }
 
 impl Format {
-  pub fn size(&self) -> Option<i64> {
-    self.filesize.or(self.filesize_approx)
+  pub fn is_video(&self) -> bool {
+    self.video_ext.is_some() && self.audio_ext.is_none()
   }
 
   pub fn is_audio(&self) -> bool {
     self.audio_ext.is_some() && self.video_ext.is_none()
-  }
-
-  pub fn is_video(&self) -> bool {
-    self.audio_ext.is_none() && self.video_ext.is_some()
   }
 }

@@ -22,7 +22,7 @@ services:
     entrypoint: []
     network_mode: host
     volumes:
-      - ./nginx/config:/etc/nginx:ro
+      - ./nginx/config-embed-hack:/etc/nginx:ro
       - ./.cache:/usr/share/riamu/cache:ro
     restart: unless-stopped
     init: true

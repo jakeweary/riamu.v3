@@ -13,14 +13,14 @@ pub struct Downloader {
   /// STEP 2: select 1 or 2 formats and send back their ids
   pub selected: oneshot::Sender<Vec<String>>,
   /// STEP 3: finish downloading
-  pub finish: JoinHandle<PyResult<Result>>,
+  pub finish: JoinHandle<PyResult<Info>>,
 }
 
 impl Downloader {
   /// STEP 0: init `Downloader` struct
   pub fn new(url: impl ToString, out_dir: impl AsRef<Path>) -> Self {
     let (context_in, context_out) = oneshot::channel();
-    let (selected_in, selected_out) = oneshot::channel::<Vec<String>>();
+    let (selected_in, selected_out) = oneshot::channel();
 
     let fs = |py: Python<'_>, ctx: Context| {
       tracing::trace!("format selector: sending available formats…");
