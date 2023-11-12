@@ -15,7 +15,8 @@ use crate::client::{err, Context, Result};
 pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
-  let json = Json::get(url).await?;
+  tracing::debug!("fetching json…");
+  let json = Json::get(&url).await?;
   let Some(data) = json.data else {
     err::message!("something went wrong");
   };
@@ -77,20 +78,21 @@ pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {
 }
 
 async fn select_quality<'a>(ctx: &Context<'_>, data: &'a Data) -> Result<&'a str> {
-  let play = format!("{}B", data.size.iec());
-  let hdplay = format!("{}B", data.hd_size.iec());
-  let wmplay = format!("{}B with watermark", data.wm_size.iec());
-
   let buttons = CreateActionRow::Buttons({
-    let values = [("hdplay", hdplay), ("play", play), ("wmplay", wmplay)];
-    let buttons = values.into_iter().enumerate().map(|(i, (id, label))| {
-      let style = match i {
-        2 => ButtonStyle::Secondary,
-        _ => ButtonStyle::Primary,
-      };
-      CreateButton::new(id).label(label).style(style)
-    });
-    buttons.collect()
+    let play = format!("{}B ", data.size.iec());
+    let hdplay = format!("{}B source quality", data.hd_size.iec());
+    // let wmplay = format!("{}B with watermark", data.wm_size.iec());
+
+    let values = [
+      ("play", play, ButtonStyle::Primary),
+      ("hdplay", hdplay, ButtonStyle::Secondary),
+      // ("wmplay", wmplay, ButtonStyle::Secondary),
+    ];
+
+    values
+      .into_iter()
+      .map(|(id, label, style)| CreateButton::new(id).label(label).style(style))
+      .collect()
   });
 
   let components = vec![buttons];
@@ -112,8 +114,8 @@ async fn select_quality<'a>(ctx: &Context<'_>, data: &'a Data) -> Result<&'a str
 
   let url = match &*mci.data.custom_id {
     "play" => &data.play,
-    "wmplay" => &data.wmplay,
     "hdplay" => &data.hdplay,
+    // "wmplay" => &data.wmplay,
     _ => unreachable!(),
   };
 
@@ -144,11 +146,11 @@ struct Data {
   author: Author,
   id: String,
   play: String,
-  wmplay: String,
-  hdplay: String,
   size: u64,
-  wm_size: u64,
+  hdplay: String,
   hd_size: u64,
+  // wmplay: String,
+  // wm_size: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -160,22 +162,44 @@ struct Author {
 
 // ---
 
-// async fn extract_id(url: &str) -> reqwest::Result<Option<u64>> {
-//   match parse_id(url) {
-//     Some(id) => Ok(Some(id)),
-//     _ => {
-//       let url = resolve_redirect(url).await?;
-//       let id = url.and_then(|url| parse_id(&url));
-//       Ok(id)
-//     }
+// fn normalize_url(url: &str) -> Option<String> {
+//   static RE: OnceLock<Regex> = OnceLock::new();
+
+//   let re = RE.get_or_init(|| {
+//     let pattern = r"(?x)
+//       tiktok\.com/@(?<name>\w+)/video/(?<id>\d+) |
+//       tiktok\.com/(?:t/)?(?<short>\w+) |
+//       ^(?<just_id>\d+)$
+//     ";
+//     Regex::new(pattern).unwrap()
+//   });
+
+//   let caps = re.captures(url)?;
+
+//   if let Some(short) = caps.name("short") {
+//     Some(format!("https://vm.tiktok.com/{}", short.as_str()))
+//   } else if let (Some(name), Some(id)) = (caps.name("name"), caps.name("id")) {
+//     Some(format!("https://tiktok.com/@{}/video/{}", name.as_str(), id.as_str()))
+//   } else if let Some(id) = caps.name("just_id") {
+//     Some(id.as_str().into())
+//   } else {
+//     None
 //   }
 // }
 
-// fn parse_id(url: &str) -> Option<u64> {
-//   tracing::debug!(%url, "parsing…");
-//   let parsed = Url::parse(url).ok()?;
-//   let last = parsed.path_segments()?.last()?;
-//   let id = last.parse().ok()?;
-//   tracing::debug!(id, "parsed");
-//   Some(id)
+// async fn extract_id(url: &str) -> reqwest::Result<Option<u64>> {
+//   let parse = |url: &str| {
+//     let parsed = Url::parse(url).ok()?;
+//     let last = parsed.path_segments()?.last()?;
+//     Some(last.parse().ok()?)
+//   };
+
+//   match parse(url) {
+//     Some(id) => Ok(Some(id)),
+//     _ => {
+//       let url = lib::network::resolve_redirect(url).await?;
+//       let id = url.and_then(|url| parse(&url));
+//       Ok(id)
+//     }
+//   }
 // }
