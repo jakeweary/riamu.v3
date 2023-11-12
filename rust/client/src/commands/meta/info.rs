@@ -26,7 +26,6 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
   let statm = me.statm()?;
 
   let cache = &*ctx.serenity.cache;
-  let bot_face = cache.current_user().face();
   let servers = cache.guild_count();
   let channels = cache.guild_channel_count();
   let users = cache.user_count();
@@ -34,7 +33,6 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
   let counters = db::counters::all(&ctx.client.db).await?;
 
   let embed = CreateEmbed::new()
-    .thumbnail(bot_face)
     .description(desc(&load, &prev, &curr)?)
     .field("System", system(&meminfo, &uptime)?, true)
     .field("Process", process(&stat, &statm, &uptime)?, true)
