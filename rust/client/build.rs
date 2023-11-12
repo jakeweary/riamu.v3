@@ -6,6 +6,7 @@ type Error = Box<dyn error::Error + Send + Sync>;
 type Result<T> = result::Result<T, Error>;
 
 fn main() -> Result<()> {
+  println!("cargo:rerun-if-changed=.");
   println!("cargo:rerun-if-changed=../../migrations");
   envs()
 }
