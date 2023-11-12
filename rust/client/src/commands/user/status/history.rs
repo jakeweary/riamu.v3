@@ -22,7 +22,7 @@ pub async fn run(
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("querying database…");
-  let statuses = db::statuses::query(&ctx.client.db, user.id, "-31 days").await?;
+  let statuses = db::statuses::query(&ctx.client.db, user.id, "-30 days").await?;
 
   tracing::debug!("rendering image…");
   let png = task::spawn_blocking(move || -> Result<_> {

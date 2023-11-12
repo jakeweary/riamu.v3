@@ -10,8 +10,14 @@ pub struct Row {
 
 pub async fn query(pool: &Pool, uid: UserId, range: &str) -> sqlx::Result<Vec<Row>> {
   let q = sqlx::query_as(
-    " select time, packed as status from statuses
-      where user = ? and unixepoch('now', ?) < time ",
+    " with a as ( select * from statuses
+                  where user = $1 and time < unixepoch('now', $2)
+                  order by time desc limit 1 ),
+           b as ( select * from statuses
+                  where user = $1 and time > unixepoch('now', $2)
+                  order by time asc )
+      select time, packed as status from a union all
+      select time, packed           from b ",
   );
   let uid = uid.get() as i64;
   q.bind(uid).bind(range).fetch_all(pool).await
