@@ -109,7 +109,7 @@ impl Client {
   }
 
   #[tracing::instrument(name="cmd", skip_all, fields(id=%ctx.id))]
-  async fn handle_command(&self, ctx: Context<'_>) {
+  async fn handle_command(&self, ctx: Context<'_>) -> serenity::Result<()> {
     let start = Instant::now();
 
     self.log_command(&ctx).await;
@@ -135,28 +135,30 @@ impl Client {
           Ok(err) => match &*err {
             CommandError::Timeout => {
               tracing::info!("timeout");
-              drop(ctx.event.delete_response(&ctx).await);
+              ctx.event.delete_response(&ctx).await?;
             }
             CommandError::Message(msg) => {
               tracing::info!(%msg, "error");
-              self.report_error(&ctx, Some(msg)).await;
+              self.report_error(&ctx, Some(msg)).await?;
             }
           },
           Err(err) => {
             tracing::error!(display=%err, "error");
             tracing::error!(debug=?err, "error");
-            self.report_error(&ctx, None).await;
+            self.report_error(&ctx, None).await?;
           }
         }
       }
       Err(panic) => {
         let panic = util::panic_message(panic);
         tracing::error!(%panic, "panic");
-        self.report_error(&ctx, None).await;
+        self.report_error(&ctx, None).await?;
       }
     }
 
     tracing::debug!("finished ({:.3?})", start.elapsed());
+
+    Ok(())
   }
 
   async fn log_command(&self, ctx: &Context<'_>) {
@@ -178,7 +180,7 @@ impl Client {
     }
   }
 
-  async fn report_error(&self, ctx: &Context<'_>, msg: Option<&str>) {
+  async fn report_error(&self, ctx: &Context<'_>, msg: Option<&str>) -> serenity::Result<()> {
     tracing::trace!("reporting error");
 
     #[rustfmt::skip]
@@ -214,41 +216,36 @@ impl Client {
       Ok::<_, serenity::Error>(())
     };
 
-    if let Err(err) = create().or_else(|_| followup()).await {
-      tracing::warn!(%err, "failed to report error");
-    };
+    create().or_else(|_| followup()).await?;
+
+    Ok(())
   }
 
-  async fn register_commands(&self, ctx: serenity::Context) {
+  async fn register_commands(&self, ctx: serenity::Context) -> serenity::Result<()> {
     let commands = commands::serialize(&self.commands);
-    match serenity::Command::set_global_commands(&ctx, commands).await {
-      Ok(commands) => tracing::debug!("registered {} global commands", commands.len()),
-      Err(err) => tracing::error!(%err, "failed to register global commands"),
-    }
+    let commands = serenity::Command::set_global_commands(&ctx, commands).await?;
+    tracing::debug!("registered {} global commands", commands.len());
 
     let guild = self.env.discord_dev_server;
     let commands = Default::default();
-    match guild.set_commands(&ctx, commands).await {
-      Ok(commands) => tracing::debug!("registered {} guild-local commands", commands.len()),
-      Err(err) => tracing::error!(%err, "failed to register guild-local commands"),
-    }
+    let commands = guild.set_commands(&ctx, commands).await?;
+    tracing::debug!("registered {} guild-local commands", commands.len());
+
+    Ok(())
   }
 
-  async fn on_ready(&self, ctx: serenity::Context, ready: serenity::Ready) {
+  async fn on_ready(&self, ctx: serenity::Context, ready: serenity::Ready) -> serenity::Result<()> {
     let (r#as, id) = (ready.user.tag(), ready.user.id.get());
     tracing::info!(%r#as, id, "connected");
-    self.register_commands(ctx).await;
+    self.register_commands(ctx).await
   }
 
-  async fn on_command(&self, ctx: serenity::Context, cmd: serenity::CommandInteraction) {
+  async fn on_command(&self, ctx: serenity::Context, cmd: serenity::CommandInteraction) -> serenity::Result<()> {
     let ctx = Context::new(self, &ctx, &cmd);
-    self.handle_command(ctx).await;
+    self.handle_command(ctx).await
   }
-}
 
-#[serenity::async_trait]
-impl serenity::RawEventHandler for Client {
-  async fn raw_event(&self, ctx: serenity::Context, event: serenity::Event) {
+  async fn on_event(&self, ctx: serenity::Context, event: serenity::Event) -> Result<()> {
     let mut messages = 0;
     let mut commands = 0;
 
@@ -256,12 +253,12 @@ impl serenity::RawEventHandler for Client {
     let mut user_name = None;
     let mut user_status = None;
 
-    {
+    let handle_event_res = async {
       use serenity::*;
 
       match event {
         Event::Ready(ReadyEvent { ready, .. }) => {
-          self.on_ready(ctx, ready).await;
+          self.on_ready(ctx, ready).await?;
         }
         Event::InteractionCreate(InteractionCreateEvent {
           interaction: Interaction::Command(command),
@@ -270,7 +267,7 @@ impl serenity::RawEventHandler for Client {
           commands += 1;
           user_id = Some(command.user.id);
           user_name = Some(command.user.name.clone());
-          self.on_command(ctx, command).await;
+          self.on_command(ctx, command).await?;
         }
         Event::MessageCreate(MessageCreateEvent { message, .. }) => {
           messages += 1;
@@ -284,22 +281,39 @@ impl serenity::RawEventHandler for Client {
         }
         _ => {}
       }
-    }
 
-    {
+      Ok::<_, serenity::Error>(())
+    }
+    .await;
+
+    let handle_db_res = async {
       let pairs = [("events", 1), ("messages", messages), ("commands", commands)];
-      let inc = db::counters::increment(&self.db, &pairs);
-      inc.await.unwrap();
-    }
+      db::counters::increment(&self.db, &pairs).await?;
 
-    if let Some(uid) = user_id {
-      let upsert = db::users::upsert(&self.db, uid, user_name, messages, commands);
-      upsert.await.unwrap();
-    }
+      if let Some(uid) = user_id {
+        db::users::upsert(&self.db, uid, user_name, messages, commands).await?;
+      }
 
-    if let (Some(uid), Some(status)) = (user_id, user_status) {
-      let insert = db::statuses::insert(&self.db, uid, status);
-      insert.await.unwrap();
+      if let (Some(uid), Some(status)) = (user_id, user_status) {
+        db::statuses::insert(&self.db, uid, status).await?;
+      }
+
+      Ok::<_, sqlx::Error>(())
+    }
+    .await;
+
+    handle_event_res?;
+    handle_db_res?;
+
+    Ok(())
+  }
+}
+
+#[serenity::async_trait]
+impl serenity::RawEventHandler for Client {
+  async fn raw_event(&self, ctx: serenity::Context, event: serenity::Event) {
+    if let Err(err) = self.on_event(ctx, event).await {
+      tracing::error!(display=%err, debug=?err, "unhandled error while event handling");
     }
   }
 }
