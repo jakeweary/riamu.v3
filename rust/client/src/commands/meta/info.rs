@@ -12,15 +12,15 @@ use crate::db;
 
 #[macros::command(description = "Show some technical info about me")]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
-  let prev = KernelStats::new()?;
+  let prev = KernelStats::current()?;
   let rtt = Instant::now();
   ctx.event.defer(ctx).await?;
   let rtt = rtt.elapsed().as_secs_f64();
-  let curr = KernelStats::new()?;
+  let curr = KernelStats::current()?;
 
-  let load = LoadAverage::new()?;
-  let uptime = Uptime::new()?;
-  let meminfo = Meminfo::new()?;
+  let load = LoadAverage::current()?;
+  let uptime = Uptime::current()?;
+  let meminfo = Meminfo::current()?;
   let me = Process::myself()?;
   let stat = me.stat()?;
   let statm = me.statm()?;

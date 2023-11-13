@@ -36,7 +36,7 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
 
   tracing::debug!("sending response…");
   let edit = EditInteractionResponse::new()
-    .clear_existing_attachments()
+    .clear_attachments()
     .content(content(bytes, upload, download)?);
   ctx.event.edit_response(ctx, edit).await?;
 
