@@ -54,8 +54,8 @@ fn render(path: impl AsRef<OsStr>) -> Result<cairo::ImageSurface> {
   cc.set_source_rgb_u32(0x1e1f22);
   cc.paint()?;
 
-  let cover_png = ffmpeg::album_cover_png(&path)?;
-  let cover = cairo::ImageSurface::create_from_png(&mut Cursor::new(cover_png))?;
+  let cover = ffmpeg::album_cover(&path, "png")?;
+  let cover = cairo::ImageSurface::create_from_png(&mut Cursor::new(cover))?;
 
   let background = {
     let mut img = cairo::ImageSurface::create(cairo::Format::Rgb24, IMAGE_W, IMAGE_H + 20)?;
@@ -97,12 +97,12 @@ fn render(path: impl AsRef<OsStr>) -> Result<cairo::ImageSurface> {
     layout.set_auto_dir(false);
 
     let meta = ffmpeg::meta(&path)?;
-    let title = meta.tags.get_or_empty(&["TITLE", "title"]);
-    let artist = meta.tags.get_or_empty(&["ARTIST", "artist"]);
-    let album = meta.tags.get_or_empty(&["ALBUM", "album"]);
-    let genre = meta.tags.get(&["GENRE", "genre"]);
-    let date = meta.tags.get(&["DATE", "date"]);
-    let length = meta.tags.get(&["LENGTH", "TLEN"]);
+    let title = meta.format.tag_or_empty(&["TITLE", "title"]);
+    let artist = meta.format.tag_or_empty(&["ARTIST", "artist"]);
+    let album = meta.format.tag_or_empty(&["ALBUM", "album"]);
+    let genre = meta.format.tag(&["GENRE", "genre"]);
+    let date = meta.format.tag(&["DATE", "date"]);
+    let length = meta.format.tag(&["LENGTH", "TLEN"]);
 
     let footer = {
       let sep = " · ";

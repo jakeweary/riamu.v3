@@ -19,13 +19,13 @@ pub fn meta(path: impl AsRef<OsStr>) -> io::Result<Meta> {
   Ok(meta)
 }
 
-pub fn album_cover_png(path: impl AsRef<OsStr>) -> io::Result<Vec<u8>> {
+pub fn album_cover(path: impl AsRef<OsStr>, codec: &str) -> io::Result<Vec<u8>> {
   let mut cmd = Command::new("ffmpeg");
 
   #[rustfmt::skip]
   let cmd = cmd
     .arg("-i").arg(path)
-    .arg("-c:v").arg("png")
+    .arg("-c:v").arg(codec)
     .arg("-f").arg("image2pipe")
     .arg("-");
 
@@ -37,22 +37,20 @@ pub fn album_cover_png(path: impl AsRef<OsStr>) -> io::Result<Vec<u8>> {
 
 #[derive(Debug, Deserialize)]
 pub struct Meta {
-  #[serde(rename = "format")]
-  pub tags: Tags,
+  pub format: Format,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Tags {
-  #[serde(rename = "tags")]
-  pub inner: HashMap<String, String>,
+pub struct Format {
+  pub tags: HashMap<String, String>,
 }
 
-impl Tags {
-  pub fn get(&self, any_of: &[&str]) -> Option<&str> {
-    any_of.iter().find_map(|&k| Some(&**self.inner.get(k)?))
+impl Format {
+  pub fn tag(&self, any_of: &[&str]) -> Option<&str> {
+    any_of.iter().find_map(|&k| Some(&**self.tags.get(k)?))
   }
 
-  pub fn get_or_empty(&self, any_of: &[&str]) -> &str {
-    self.get(any_of).unwrap_or("")
+  pub fn tag_or_empty(&self, any_of: &[&str]) -> &str {
+    self.tag(any_of).unwrap_or("")
   }
 }
