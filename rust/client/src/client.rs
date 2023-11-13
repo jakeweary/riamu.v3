@@ -245,6 +245,15 @@ impl Client {
     self.handle_command(ctx).await
   }
 
+  async fn on_message(&self, ctx: serenity::Context, msg: serenity::Message) -> serenity::Result<()> {
+    if msg.mentions_me(&ctx).await? {
+      if msg.reply_ping(&ctx, '😳').await.is_err() {
+        tracing::warn!("can't reply to the ping");
+      }
+    }
+    Ok(())
+  }
+
   async fn on_event(&self, ctx: serenity::Context, event: serenity::Event) -> Result<()> {
     let mut messages = 0;
     let mut commands = 0;
@@ -273,6 +282,7 @@ impl Client {
           messages += 1;
           user_id = Some(message.author.id);
           user_name = Some(message.author.name.clone());
+          self.on_message(ctx, message).await?;
         }
         Event::PresenceUpdate(PresenceUpdateEvent { presence, .. }) => {
           user_id = Some(presence.user.id);
