@@ -6,6 +6,18 @@ trap 'rm -rf .tmp' EXIT
 
 # ---
 
+url=$(curl -fsSL https://speedtest.net/apps/cli |
+  grep -oE 'https://[^"]*\.tgz' |
+  grep -- -$(uname -m).)
+
+pushd .tmp
+  curl -fsSLO "$url"
+  tar -vxzf *.tgz
+popd
+mv .tmp/speedtest deps
+
+# ---
+
 git clone --depth=1 https://github.com/nalgeon/sqlean.git .tmp/sqlean
 pushd .tmp/sqlean
   make prepare-dist

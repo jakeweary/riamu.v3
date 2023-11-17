@@ -13,6 +13,7 @@ mod lookup {
 mod meta {
   pub mod info;
   pub mod speed;
+  pub mod speed_to_discord;
 }
 mod repost {
   pub mod _2ch;
@@ -55,6 +56,7 @@ pub fn build() -> client::Commands {
     "meta" => {
       "info" => meta::info::run,
       "speed" => meta::speed::run,
+      "speed-to-discord" => meta::speed_to_discord::run,
     },
     "repost" => {
       "2ch" => repost::_2ch::run,

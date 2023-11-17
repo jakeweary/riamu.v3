@@ -1,59 +1,39 @@
-use std::fmt::{self, Write};
-use std::result::Result as StdResult;
-use std::time::Instant;
+use std::process::Command;
 
-use futures::StreamExt;
-use lib::fmt::num::Format;
-use lib::random::xorshift64;
+use lib::task;
 use serenity::all::*;
 
 use crate::client::{Context, Result};
 
-#[macros::command(description = "Measure my connection speed to Discord servers")]
+#[macros::command(description = "Measure my connection speed", owner_only)]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
-  let bytes = ctx.filesize_limit().await? - 512;
-  let buffer = xorshift64::random_bytes(Some(ctx.id.0))
-    .take(bytes as usize)
-    .collect::<Vec<_>>();
-
-  tracing::debug!("uploading…");
-  let upload = Instant::now();
-  let att = CreateAttachment::bytes(buffer, "nudes.rar");
-  let edit = EditInteractionResponse::new().new_attachment(att);
-  let msg = ctx.event.edit_response(ctx, edit).await?;
-  let upload = upload.elapsed().as_secs_f64();
-
-  tracing::debug!("downloading…");
-  let download = Instant::now();
-  let resp = reqwest::get(&msg.attachments[0].url).await?.error_for_status()?;
-  let mut stream = resp.bytes_stream();
-  while let Some(bytes) = stream.next().await {
-    bytes?;
-  }
-  let download = download.elapsed().as_secs_f64();
+  tracing::debug!("measuring…");
+  let measure = task::spawn_blocking(|| {
+    let mut cmd = Command::new("deps/speedtest");
+    cmd.args(&["--accept-license", "--accept-gdpr", "-f", "json"]);
+    cmd.output()
+  });
+  let output = measure.await??;
+  let json = serde_json::from_slice::<json::Root>(&output.stdout)?;
+  let url = format!("{}.png", json.result.url);
 
   tracing::debug!("sending response…");
-  let edit = EditInteractionResponse::new()
-    .clear_attachments()
-    .content(content(bytes, upload, download)?);
+  let edit = EditInteractionResponse::new().content(url);
   ctx.event.edit_response(ctx, edit).await?;
 
   Ok(())
 }
 
-fn content(bytes: u64, upload: f64, download: f64) -> StdResult<String, fmt::Error> {
-  #[rustfmt::skip]
-  let line = |acc: &mut dyn Write, label: &str, bytes_per_second: f64| {
-    let si = (8.0 * bytes_per_second).si();
-    let iec = bytes_per_second.iec();
-    writeln!(acc, "{}: `{}` {}bit/s (`{}` {}B/s)",
-      label, si.norm, si.prefix, iec.norm, iec.prefix)
-  };
+mod json {
+  #[derive(serde::Deserialize)]
+  pub struct Root {
+    pub result: Result,
+  }
 
-  let mut acc = String::new();
-  line(&mut acc, "Me → Discord", bytes as f64 / upload)?;
-  line(&mut acc, "Me ← Discord", bytes as f64 / download)?;
-  Ok(acc)
+  #[derive(serde::Deserialize)]
+  pub struct Result {
+    pub url: String,
+  }
 }
