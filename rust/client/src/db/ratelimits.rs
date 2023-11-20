@@ -4,8 +4,7 @@ use lib::gcra;
 
 use super::*;
 
-pub use gcra::Gcra as Rate;
-pub use gcra::Info;
+pub use gcra::*;
 
 pub async fn update(pool: &Pool, key: impl Hash, rate: Rate) -> sqlx::Result<Info> {
   update_n(pool, key, rate, 1.0).await
