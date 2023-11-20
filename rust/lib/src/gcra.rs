@@ -13,7 +13,7 @@
 
 use std::time::{self, Duration, SystemTime};
 
-#[derive(Debug)]
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct Info {
   pub result: Result<(), Retry>,
   pub reset: Duration,
@@ -21,7 +21,7 @@ pub struct Info {
   pub free: f64,
 }
 
-#[derive(Debug)]
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub enum Retry {
   After(Duration),
   Never,
@@ -29,7 +29,7 @@ pub enum Retry {
 
 // ---
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Rate {
   pub quota: f64,
   pub limit: u64,
@@ -65,14 +65,14 @@ impl Rate {
     Self::new(quota, Duration::from_secs(60 * 60 * 24 * 30))
   }
 
-  fn increment(&self) -> f64 {
+  fn as_increment(&self) -> f64 {
     self.limit as f64 / self.quota
   }
 }
 
 // ---
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct State {
   pub tat: u64,
 }
@@ -87,7 +87,7 @@ impl State {
   }
 
   fn update_n_at(&mut self, rate: Rate, n: f64, t_arrived: u64) -> Info {
-    let inc = rate.increment();
+    let inc = rate.as_increment();
     let inc_n = (inc * n) as u64;
 
     let tat = self.tat.max(t_arrived) + inc_n;
@@ -96,8 +96,7 @@ impl State {
     let result = if inc_n > rate.limit {
       Err(Retry::Never)
     } else if tat > tat_threshold {
-      let dur = Duration::from_nanos(tat - tat_threshold);
-      Err(Retry::After(dur))
+      Err(Retry::After(Duration::from_nanos(tat - tat_threshold)))
     } else {
       self.tat = tat;
       Ok(())
@@ -120,4 +119,72 @@ fn unix_epoch_ns() -> u64 {
   let now = SystemTime::now();
   let epoch = now.duration_since(time::UNIX_EPOCH).unwrap();
   epoch.as_nanos() as u64
+}
+
+// ---
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn ns(ns: u64) -> Duration {
+    Duration::from_nanos(ns)
+  }
+
+  #[test]
+  fn basic_usage() {
+    let rate = Rate::per_second(2.0);
+    let mut state = State::default();
+
+    assert!(state.update(rate).result.is_ok());
+    assert!(state.update(rate).result.is_ok());
+    assert!(state.update(rate).result.is_err());
+  }
+
+  #[test]
+  fn time_is_freezed() {
+    let rate = Rate::new(2.0, ns(2));
+    let mut state = State::default();
+
+    assert_eq! {
+      state.update_n_at(rate, 1.0, 0),
+      Info { result: Ok(()), reset: ns(1), used: 1.0, free: 1.0 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, 1.0, 0),
+      Info { result: Ok(()), reset: ns(2), used: 2.0, free: 0.0 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, 1.0, 0),
+      Info { result: Err(Retry::After(ns(1))), reset: ns(2), used: 2.0, free: 0.0 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, 3.0, 0),
+      Info { result: Err(Retry::Never), reset: ns(2), used: 2.0, free: 0.0 },
+    }
+  }
+
+  #[test]
+  fn time_is_moving_forward() {
+    let rate = Rate::new(1.0, ns(4));
+    let mut state = State::default();
+
+    assert_eq! {
+      state.update_n_at(rate, 1.0, 0),
+      Info { result: Ok(()), reset: ns(4), used: 1.0, free: 0.0 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, 1.0, 1),
+      Info { result: Err(Retry::After(ns(3))), reset: ns(3), used: 0.75, free: 0.25 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, 1.0, 4),
+      Info { result: Ok(()), reset: ns(4), used: 1.0, free: 0.0 },
+    }
+  }
 }
