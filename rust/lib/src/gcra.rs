@@ -117,8 +117,8 @@ impl State {
 
 fn unix_epoch_ns() -> u64 {
   let now = SystemTime::now();
-  let epoch = now.duration_since(time::UNIX_EPOCH).unwrap();
-  epoch.as_nanos() as u64
+  let epoch = now.duration_since(time::UNIX_EPOCH);
+  epoch.map_or(0, |d| d.as_nanos() as u64)
 }
 
 // ---
