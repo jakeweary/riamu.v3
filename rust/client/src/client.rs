@@ -246,17 +246,8 @@ impl Client {
   }
 
   async fn on_message(&self, ctx: serenity::Context, msg: serenity::Message) -> Result<()> {
-    if msg.mentions_me(&ctx).await? {
-      let key = ("pinged by", msg.author.id);
-      let rate = db::ratelimits::Rate::per_minute(9.0);
-      let info = db::ratelimits::update(&self.db, key, rate).await?;
-
-      let emojis = ['😳', '🤨', '😕', '🙄', '😒', '😔', '😠', '😡', '🤬'];
-      let emoji = emojis[info.used as usize];
-
-      if msg.react(&ctx, emoji).await.is_err() {
-        tracing::warn!("can't react to the ping");
-      }
+    if msg.mentions_me(&ctx).await? && msg.react(&ctx, '😳').await.is_err() {
+      tracing::warn!("can't react to the ping");
     }
     Ok(())
   }
