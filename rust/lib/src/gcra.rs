@@ -1,9 +1,12 @@
-// Slightly improved version of Generic Cell Rate Algorithm
+// a loose implementation of Generic Cell Rate Algorithm
 // from Traffic Management Specification Version 4.0
+// slightly improved and adapted for modern use cases
 //
+// useful resources:
 // https://broadband-forum.org/download/af-tm-0056.000.pdf
 // https://en.wikipedia.org/wiki/Generic_cell_rate_algorithm
 //
+// and some blog posts:
 // https://brandur.org/rate-limiting
 // https://blog.ian.stapletoncordas.co/2018/12/understanding-generic-cell-rate-limiting
 // https://smarketshq.com/implementing-gcra-in-python-5df1f11aaa96
