@@ -1,6 +1,7 @@
 pub mod discord;
 pub mod ffmpeg;
 pub mod fmt;
+pub mod gcra;
 pub mod network;
 pub mod task;
 pub mod text;
