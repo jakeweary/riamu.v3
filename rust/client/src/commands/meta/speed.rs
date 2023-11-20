@@ -12,7 +12,7 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
   tracing::debug!("measuring…");
   let measure = task::spawn_blocking(|| {
     let mut cmd = Command::new("deps/speedtest");
-    cmd.args(&["--accept-license", "--accept-gdpr", "-f", "json"]);
+    cmd.args(["--accept-license", "--accept-gdpr", "-f", "json"]);
     cmd.output()
   });
   let output = measure.await??;

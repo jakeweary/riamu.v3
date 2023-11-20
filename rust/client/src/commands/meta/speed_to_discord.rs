@@ -14,9 +14,7 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   let bytes = ctx.filesize_limit().await? - 512;
-  let buffer = xorshift64::random_bytes(Some(ctx.id.0))
-    .take(bytes as usize)
-    .collect::<Vec<_>>();
+  let buffer = xorshift64::bytes(ctx.id.0).take(bytes as usize).collect::<Vec<_>>();
 
   tracing::debug!("uploading…");
   let upload = Instant::now();

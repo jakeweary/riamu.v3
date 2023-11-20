@@ -16,7 +16,7 @@ pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("fetching json…");
-  let json = Json::get(&url).await?;
+  let json = Json::get(url).await?;
   let Some(data) = json.data else {
     err::message!("something went wrong");
   };

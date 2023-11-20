@@ -246,10 +246,8 @@ impl Client {
   }
 
   async fn on_message(&self, ctx: serenity::Context, msg: serenity::Message) -> serenity::Result<()> {
-    if msg.mentions_me(&ctx).await? {
-      if msg.reply_ping(&ctx, '😳').await.is_err() {
-        tracing::warn!("can't reply to the ping");
-      }
+    if msg.mentions_me(&ctx).await? && msg.reply_ping(&ctx, '😳').await.is_err() {
+      tracing::warn!("can't reply to the ping");
     }
     Ok(())
   }
