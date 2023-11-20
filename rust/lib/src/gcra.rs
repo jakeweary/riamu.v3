@@ -10,17 +10,6 @@
 
 use std::time::{self, Duration, SystemTime};
 
-#[derive(Debug, Clone, Copy)]
-pub struct Gcra {
-  pub increment: f64,
-  pub limit: u64,
-}
-
-#[derive(Debug, Default)]
-pub struct State {
-  pub tat: u64,
-}
-
 #[derive(Debug)]
 pub struct Info {
   pub result: Result<(), Retry>,
@@ -35,6 +24,14 @@ pub enum Retry {
   Never,
 }
 
+// ---
+
+#[derive(Debug, Clone, Copy)]
+pub struct Gcra {
+  pub increment: f64,
+  pub limit: u64,
+}
+
 impl Gcra {
   pub fn new(quota: f64, period: Duration) -> Self {
     let period_ns = period.as_nanos();
@@ -43,6 +40,37 @@ impl Gcra {
       limit: period_ns as u64,
     }
   }
+
+  pub fn per_second(quota: f64) -> Self {
+    Self::new(quota, Duration::from_secs(1))
+  }
+
+  pub fn per_minute(quota: f64) -> Self {
+    Self::new(quota, Duration::from_secs(60))
+  }
+
+  pub fn per_hour(quota: f64) -> Self {
+    Self::new(quota, Duration::from_secs(60 * 60))
+  }
+
+  pub fn per_day(quota: f64) -> Self {
+    Self::new(quota, Duration::from_secs(60 * 60 * 24))
+  }
+
+  pub fn per_week(quota: f64) -> Self {
+    Self::new(quota, Duration::from_secs(60 * 60 * 24 * 7))
+  }
+
+  pub fn per_month(quota: f64) -> Self {
+    Self::new(quota, Duration::from_secs(60 * 60 * 24 * 30))
+  }
+}
+
+// ---
+
+#[derive(Debug, Default)]
+pub struct State {
+  pub tat: u64,
 }
 
 impl State {

@@ -248,7 +248,7 @@ impl Client {
   async fn on_message(&self, ctx: serenity::Context, msg: serenity::Message) -> Result<()> {
     if msg.mentions_me(&ctx).await? {
       let key = ("pinged by", msg.author.id);
-      let rate = db::ratelimits::Rate::new(9.0, Duration::from_secs(60));
+      let rate = db::ratelimits::Rate::per_minute(9.0);
       let info = db::ratelimits::update(&self.db, key, rate).await?;
 
       let emojis = ['😳', '🤨', '😕', '🙄', '😒', '😔', '😠', '😡', '🤬'];
