@@ -13,14 +13,14 @@ use std::time::{self, Duration, SystemTime};
 #[derive(Debug)]
 pub struct Info {
   pub result: Result<(), Retry>,
-  pub reset: u64,
+  pub reset: Duration,
   pub used: f64,
   pub free: f64,
 }
 
 #[derive(Debug)]
 pub enum Retry {
-  After(u64),
+  After(Duration),
   Never,
 }
 
@@ -93,9 +93,11 @@ impl State {
     let result = if inc_n > rate.limit {
       Err(Retry::Never)
     } else if tat > tat_threshold {
-      Err(Retry::After(tat - tat_threshold))
+      let dur = Duration::from_nanos(tat - tat_threshold);
+      Err(Retry::After(dur))
     } else {
-      Ok(self.tat = tat)
+      self.tat = tat;
+      Ok(())
     };
 
     let tat = self.tat.max(t_arrived);
@@ -104,7 +106,7 @@ impl State {
 
     Info {
       result,
-      reset: used,
+      reset: Duration::from_nanos(used),
       used: used as f64 / inc,
       free: free as f64 / inc,
     }
