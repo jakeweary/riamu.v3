@@ -160,11 +160,6 @@ mod tests {
       state.update_n_at(rate, 1.0, 0),
       Info { result: Err(Retry::After(ns(1))), reset: ns(2), used: 2.0, free: 0.0 },
     }
-
-    assert_eq! {
-      state.update_n_at(rate, 3.0, 0),
-      Info { result: Err(Retry::Never), reset: ns(2), used: 2.0, free: 0.0 },
-    }
   }
 
   #[test]
@@ -185,6 +180,33 @@ mod tests {
     assert_eq! {
       state.update_n_at(rate, 1.0, 4),
       Info { result: Ok(()), reset: ns(4), used: 1.0, free: 0.0 },
+    }
+  }
+
+  #[test]
+  fn retry_never() {
+    let rate = Rate::new(1.0, ns(1));
+    let mut state = State::default();
+
+    assert_eq! {
+      state.update_n_at(rate, 2.0, 0),
+      Info { result: Err(Retry::Never), reset: ns(0), used: 0.0, free: 1.0 },
+    }
+  }
+
+  #[test]
+  fn rounding_and_precision() {
+    let rate = Rate::new(1.0, ns(1));
+    let mut state = State::default();
+
+    assert_eq! {
+      state.update_n_at(rate, 0.9, 0), // 0.9 rounded down to 0
+      Info { result: Ok(()), reset: ns(0), used: 0.0, free: 1.0 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, 1.9, 0), // 1.9 rounded down to 1
+      Info { result: Ok(()), reset: ns(1), used: 1.0, free: 0.0 },
     }
   }
 }
