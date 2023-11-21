@@ -7,6 +7,7 @@ pub type QueryBuilder<'a> = sqlx::QueryBuilder<'a, Sqlite>;
 pub type QueryResult = SqliteQueryResult;
 
 pub mod counters;
+pub mod ratelimits;
 pub mod statuses;
 pub mod users;
 

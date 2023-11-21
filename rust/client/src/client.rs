@@ -245,9 +245,9 @@ impl Client {
     self.handle_command(ctx).await
   }
 
-  async fn on_message(&self, ctx: serenity::Context, msg: serenity::Message) -> serenity::Result<()> {
-    if msg.mentions_me(&ctx).await? && msg.reply_ping(&ctx, '😳').await.is_err() {
-      tracing::warn!("can't reply to the ping");
+  async fn on_message(&self, ctx: serenity::Context, msg: serenity::Message) -> Result<()> {
+    if msg.mentions_me(&ctx).await? && msg.react(&ctx, '😳').await.is_err() {
+      tracing::warn!("can't react to the ping");
     }
     Ok(())
   }
@@ -290,7 +290,7 @@ impl Client {
         _ => {}
       }
 
-      Ok::<_, serenity::Error>(())
+      self::Result::Ok(())
     }
     .await;
 
@@ -306,7 +306,7 @@ impl Client {
         db::statuses::insert(&self.db, uid, status).await?;
       }
 
-      Ok::<_, sqlx::Error>(())
+      self::Result::Ok(())
     }
     .await;
 
