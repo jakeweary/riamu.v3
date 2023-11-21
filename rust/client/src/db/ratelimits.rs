@@ -7,15 +7,15 @@ use super::*;
 pub use gcra::*;
 
 pub async fn update(pool: &Pool, key: impl Hash, rate: Rate) -> sqlx::Result<Info> {
-  update_n(pool, key, rate, 1).await
+  update_n(pool, key, rate, 1.0).await
 }
 
-pub async fn update_n(pool: &Pool, key: impl Hash, rate: Rate, n: i64) -> sqlx::Result<Info> {
+pub async fn update_n(pool: &Pool, key: impl Hash, rate: Rate, n: f64) -> sqlx::Result<Info> {
   let key = hash(key) as i64;
   update_n_inner(pool, key, rate, n).await
 }
 
-async fn update_n_inner(pool: &Pool, key: i64, rate: Rate, n: i64) -> sqlx::Result<Info> {
+async fn update_n_inner(pool: &Pool, key: i64, rate: Rate, n: f64) -> sqlx::Result<Info> {
   let mut tx = pool.begin().await?;
 
   let q = sqlx::query_as("select tat from gcra where key = ?");
