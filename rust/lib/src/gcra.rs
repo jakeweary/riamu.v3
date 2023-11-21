@@ -5,9 +5,9 @@
 //!
 //! ```
 //! State::info()         // get current info
-//! State::update()       // try to spend 1 unit of quota
-//! State::update_n(3.0)  // try to spend 3 units of quota
-//! State::update_n(-2.0) // rollback 2 units of quota
+//! State::update()       // try to spend 1 unit from quota
+//! State::update_n(3.0)  // try to spend 3 units
+//! State::update_n(-2.0) // revert spending of 2 units
 //!
 //! Ok(())                // ok
 //! Err(Retry::After(_))  // rejected (retry after the provided amount)
