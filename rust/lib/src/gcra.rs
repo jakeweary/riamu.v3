@@ -13,9 +13,10 @@
 //! Err(Retry::After(_))  // rejected (retry after the provided amount)
 //! Err(Retry::Never)     // rejected forever (requested too much quota)
 //!
-//! Info::reset()         // shows when `used()` will be 0 again
-//! Info::used()          // shows the used quota
-//! Info::remaining()     // shows the remaining quota
+//! Info::remaining()     // remaining quota
+//! Info::used()          // used quota
+//! Info::ratio()         // used/total quota ratio
+//! Info::reset()         // when `used()` will be 0 again
 //! ```
 //!
 //! Useful resources: [pdf] [wiki], and some blog posts: [1] [2] [3].
@@ -47,14 +48,16 @@ impl Info {
     Duration::from_nanos(self.reset)
   }
 
+  pub fn ratio(&self) -> f64 {
+    self.reset as f64 / self.rate.period as f64
+  }
+
   pub fn used(&self) -> f64 {
-    let n = self.reset;
-    n as f64 / self.rate.as_increment()
+    self.reset as f64 / self.rate.as_increment()
   }
 
   pub fn remaining(&self) -> f64 {
-    let n = self.rate.period - self.reset;
-    n as f64 / self.rate.as_increment()
+    (self.rate.period - self.reset) as f64 / self.rate.as_increment()
   }
 }
 
