@@ -57,7 +57,7 @@ impl Info {
   }
 
   pub fn remaining(&self) -> f64 {
-    (self.rate.period - self.reset) as f64 / self.rate.as_increment()
+    (self.rate.period as f64 - self.reset as f64) / self.rate.as_increment()
   }
 }
 
@@ -132,10 +132,15 @@ impl State {
   }
 
   pub fn update_n(&mut self, rate: Rate, n: f64) -> Info {
-    self.update_n_at(rate, n, unix_epoch_ns())
+    self.upd(rate, n, unix_epoch_ns(), false)
   }
 
-  fn update_n_at(&mut self, rate: Rate, n: f64, t_arrived: u64) -> Info {
+  pub fn forced_update_n(&mut self, rate: Rate, n: f64) -> Info {
+    self.upd(rate, n, unix_epoch_ns(), true)
+  }
+
+  #[inline(never)]
+  fn upd(&mut self, rate: Rate, n: f64, t_arrived: u64, forced: bool) -> Info {
     let result = 'r: {
       let inc = rate.as_increment();
 
@@ -152,7 +157,7 @@ impl State {
 
       // non-conforming (`n` is too big)
       // (isn't really a part of the original algorithm)
-      if inc_n > rate.period {
+      if inc_n > rate.period && !forced {
         break 'r Err(Retry::Never);
       }
 
@@ -160,7 +165,7 @@ impl State {
       let tat_threshold = t_arrived + rate.period;
 
       // non-conforming (rate limited)
-      if tat > tat_threshold {
+      if tat > tat_threshold && !forced {
         let after = Duration::from_nanos(tat - tat_threshold);
         break 'r Err(Retry::After(after));
       }
@@ -175,6 +180,7 @@ impl State {
   }
 }
 
+#[inline(never)]
 fn unix_epoch_ns() -> u64 {
   let now = SystemTime::now();
   let epoch = now.duration_since(time::UNIX_EPOCH);
@@ -187,9 +193,9 @@ fn unix_epoch_ns() -> u64 {
 mod tests {
   use super::*;
 
-  fn ns(ns: u64) -> Duration {
-    Duration::from_nanos(ns)
-  }
+  const NORMAL: bool = false;
+  const FORCED: bool = true;
+  const NS: fn(u64) -> Duration = Duration::from_nanos;
 
   #[test]
   fn basic_usage() {
@@ -203,43 +209,54 @@ mod tests {
 
   #[test]
   fn retry() {
-    let rate = Rate::new(2.0, ns(2));
+    let rate = Rate::new(2.0, NS(2));
     let mut state = State::default();
 
-    assert_eq!(state.update_n_at(rate, 2.0, 1).result, Ok(()));
-    assert_eq!(state.update_n_at(rate, 2.0, 1).result, Err(Retry::After(ns(2))));
-    assert_eq!(state.update_n_at(rate, 1.0, 1).result, Err(Retry::After(ns(1))));
-    assert_eq!(state.update_n_at(rate, 2.0, 2).result, Err(Retry::After(ns(1))));
-    assert_eq!(state.update_n_at(rate, 1.0, 2).result, Ok(()));
-    assert_eq!(state.update_n_at(rate, 3.0, 2).result, Err(Retry::Never));
+    assert_eq!(state.upd(rate, 2.0, 1, NORMAL).result, Ok(()));
+    assert_eq!(state.upd(rate, 2.0, 1, NORMAL).result, Err(Retry::After(NS(2))));
+    assert_eq!(state.upd(rate, 1.0, 1, NORMAL).result, Err(Retry::After(NS(1))));
+    assert_eq!(state.upd(rate, 2.0, 2, NORMAL).result, Err(Retry::After(NS(1))));
+    assert_eq!(state.upd(rate, 1.0, 2, NORMAL).result, Ok(()));
+    assert_eq!(state.upd(rate, 3.0, 2, NORMAL).result, Err(Retry::Never));
   }
 
   #[test]
-  fn increment_and_decrement() {
-    let rate = Rate::new(5.0, ns(5));
+  fn back_and_forth() {
+    let rate = Rate::new(5.0, NS(5));
     let mut state = State::default();
 
-    assert_eq!(state.update_n_at(rate, -1.0, 1).reset(), ns(0));
-    assert_eq!(state.update_n_at(rate, 0.0, 1).reset(), ns(0));
-    assert_eq!(state.update_n_at(rate, 1.0, 1).reset(), ns(1));
-    assert_eq!(state.update_n_at(rate, 2.0, 1).reset(), ns(3));
-    assert_eq!(state.update_n_at(rate, -1.0, 1).reset(), ns(2));
-    assert_eq!(state.update_n_at(rate, -10.0, 1).reset(), ns(0));
-    assert_eq!(state.update_n_at(rate, 1.0, 1).reset(), ns(1));
+    assert_eq!(state.upd(rate, -1.0, 1, NORMAL).reset(), NS(0));
+    assert_eq!(state.upd(rate, 0.0, 1, NORMAL).reset(), NS(0));
+    assert_eq!(state.upd(rate, 1.0, 1, NORMAL).reset(), NS(1));
+    assert_eq!(state.upd(rate, 2.0, 1, NORMAL).reset(), NS(3));
+    assert_eq!(state.upd(rate, -1.0, 1, NORMAL).reset(), NS(2));
+    assert_eq!(state.upd(rate, -10.0, 1, NORMAL).reset(), NS(0));
+    assert_eq!(state.upd(rate, 1.0, 1, NORMAL).reset(), NS(1));
   }
 
   #[test]
-  fn used_and_remaining() {
-    let rate = Rate::new(10.0, ns(10));
-
+  fn info() {
+    let rate = Rate::new(4.0, NS(4));
     let mut state = State::default();
-    assert_eq!(state.update_n_at(rate, 1.0, 1).used(), 1.0);
-    assert_eq!(state.update_n_at(rate, 1.0, 1).used(), 2.0);
-    assert_eq!(state.update_n_at(rate, 1.0, 1).used(), 3.0);
 
+    let info = state.upd(rate, 1.0, 1, NORMAL);
+    assert_eq!((info.ratio(), info.used(), info.remaining()), (0.25, 1.0, 3.0));
+
+    let info = state.upd(rate, 1.0, 1, NORMAL);
+    assert_eq!((info.ratio(), info.used(), info.remaining()), (0.50, 2.0, 2.0));
+
+    let info = state.upd(rate, 1.0, 1, NORMAL);
+    assert_eq!((info.ratio(), info.used(), info.remaining()), (0.75, 3.0, 1.0));
+  }
+
+  #[test]
+  fn forced() {
+    let rate = Rate::new(5.0, NS(5));
     let mut state = State::default();
-    assert_eq!(state.update_n_at(rate, 1.0, 1).remaining(), 9.0);
-    assert_eq!(state.update_n_at(rate, 1.0, 1).remaining(), 8.0);
-    assert_eq!(state.update_n_at(rate, 1.0, 1).remaining(), 7.0);
+
+    let info = state.upd(rate, 100.0, 1, FORCED);
+    assert_eq!(info.result, Ok(()));
+    assert_eq!(info.reset(), NS(100));
+    assert_eq!((info.ratio(), info.used(), info.remaining()), (20.0, 100.0, -95.0));
   }
 }
