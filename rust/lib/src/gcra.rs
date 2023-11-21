@@ -13,12 +13,14 @@
 
 use std::time::{self, Duration, SystemTime};
 
+pub type Result = std::result::Result<(), Retry>;
+
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct Info {
-  pub result: Result<(), Retry>,
+  pub result: Result,
   pub reset: Duration,
-  pub used: f64,
-  pub free: f64,
+  pub used: u64,
+  pub free: u64,
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq))]
@@ -31,42 +33,42 @@ pub enum Retry {
 
 #[derive(Clone, Copy)]
 pub struct Rate {
-  pub quota: f64,
+  pub quota: u64,
   pub limit: u64,
 }
 
 impl Rate {
-  pub const fn new(quota: f64, period: Duration) -> Self {
+  pub const fn new(quota: u64, period: Duration) -> Self {
     let limit = period.as_nanos() as u64;
     Self { quota, limit }
   }
 
-  pub const fn per_second(quota: f64) -> Self {
+  pub const fn per_second(quota: u64) -> Self {
     Self::new(quota, Duration::from_secs(1))
   }
 
-  pub const fn per_minute(quota: f64) -> Self {
+  pub const fn per_minute(quota: u64) -> Self {
     Self::new(quota, Duration::from_secs(60))
   }
 
-  pub const fn per_hour(quota: f64) -> Self {
+  pub const fn per_hour(quota: u64) -> Self {
     Self::new(quota, Duration::from_secs(60 * 60))
   }
 
-  pub const fn per_day(quota: f64) -> Self {
+  pub const fn per_day(quota: u64) -> Self {
     Self::new(quota, Duration::from_secs(60 * 60 * 24))
   }
 
-  pub const fn per_week(quota: f64) -> Self {
+  pub const fn per_week(quota: u64) -> Self {
     Self::new(quota, Duration::from_secs(60 * 60 * 24 * 7))
   }
 
-  pub const fn per_month(quota: f64) -> Self {
+  pub const fn per_month(quota: u64) -> Self {
     Self::new(quota, Duration::from_secs(60 * 60 * 24 * 30))
   }
 
-  fn as_increment(&self) -> f64 {
-    self.limit as f64 / self.quota
+  pub const fn per_year(quota: u64) -> Self {
+    Self::new(quota, Duration::from_secs(60 * 60 * 24 * 365))
   }
 }
 
@@ -79,39 +81,64 @@ pub struct State {
 
 impl State {
   pub fn update(&mut self, rate: Rate) -> Info {
-    self.update_n(rate, 1.0)
+    self.update_n(rate, 1)
   }
 
-  pub fn update_n(&mut self, rate: Rate, n: f64) -> Info {
+  pub fn update_n(&mut self, rate: Rate, n: i64) -> Info {
     self.update_n_at(rate, n, unix_epoch_ns())
   }
 
-  fn update_n_at(&mut self, rate: Rate, n: f64, t_arrived: u64) -> Info {
-    let inc = rate.as_increment();
-    let inc_n = (inc * n) as u64;
+  pub fn update_n_at(&mut self, rate: Rate, n: i64, t_arrived: u64) -> Info {
+    let inc = div_floor(n.unsigned_abs() * rate.limit, rate.quota);
 
-    let tat = self.tat.max(t_arrived) + inc_n;
-    let tat_threshold = t_arrived + rate.limit;
+    let result = 'r: {
+      if n < 0 {
+        self.tat = self.tat.saturating_sub(inc);
+        break 'r Ok(());
+      }
 
-    let result = if inc_n > rate.limit {
-      Err(Retry::Never)
-    } else if tat > tat_threshold {
-      Err(Retry::After(Duration::from_nanos(tat - tat_threshold)))
-    } else {
+      if inc > rate.limit {
+        break 'r Err(Retry::Never);
+      }
+
+      let tat = self.tat.max(t_arrived) + inc;
+      let tat_threshold = t_arrived + rate.limit;
+
+      if tat > tat_threshold {
+        let after = Duration::from_nanos(tat - tat_threshold);
+        break 'r Err(Retry::After(after));
+      }
+
       self.tat = tat;
       Ok(())
     };
 
-    let tat = self.tat.max(t_arrived);
-    let used = tat - t_arrived;
-    let free = tat_threshold - tat;
+    let delta = self.tat.saturating_sub(t_arrived);
+    let reset = Duration::from_nanos(delta);
+    let used = div_ceil(delta * rate.quota, rate.limit);
+    let free = rate.quota - used;
 
     Info {
       result,
-      reset: Duration::from_nanos(used),
-      used: used as f64 / inc,
-      free: free as f64 / inc,
+      reset,
+      used,
+      free,
     }
+  }
+}
+
+// https://stackoverflow.com/a/14878734/8802501
+fn div_ceil(num: u64, den: u64) -> u64 {
+  match den {
+    0 => unsafe { std::hint::unreachable_unchecked() },
+    _ => num / den + (num % den != 0) as u64,
+  }
+}
+
+fn div_floor(num: u64, den: u64) -> u64 {
+  match den {
+    0 => unsafe { std::hint::unreachable_unchecked() },
+    _ => num / den,
   }
 }
 
@@ -133,7 +160,7 @@ mod tests {
 
   #[test]
   fn basic_usage() {
-    let rate = Rate::per_second(2.0);
+    let rate = Rate::per_second(2);
     let mut state = State::default();
 
     assert!(state.update(rate).result.is_ok());
@@ -143,70 +170,85 @@ mod tests {
 
   #[test]
   fn time_is_freezed() {
-    let rate = Rate::new(2.0, ns(2));
+    let rate = Rate::new(2, ns(2));
     let mut state = State::default();
 
     assert_eq! {
-      state.update_n_at(rate, 1.0, 0),
-      Info { result: Ok(()), reset: ns(1), used: 1.0, free: 1.0 },
+      state.update_n_at(rate, 1, 1),
+      Info { result: Ok(()), reset: ns(1), used: 1, free: 1 },
     }
 
     assert_eq! {
-      state.update_n_at(rate, 1.0, 0),
-      Info { result: Ok(()), reset: ns(2), used: 2.0, free: 0.0 },
+      state.update_n_at(rate, 1, 1),
+      Info { result: Ok(()), reset: ns(2), used: 2, free: 0 },
     }
 
     assert_eq! {
-      state.update_n_at(rate, 1.0, 0),
-      Info { result: Err(Retry::After(ns(1))), reset: ns(2), used: 2.0, free: 0.0 },
+      state.update_n_at(rate, 1, 1),
+      Info { result: Err(Retry::After(ns(1))), reset: ns(2), used: 2, free: 0 },
     }
   }
 
   #[test]
   fn time_is_moving_forward() {
-    let rate = Rate::new(1.0, ns(4));
+    let rate = Rate::new(1, ns(4));
     let mut state = State::default();
 
     assert_eq! {
-      state.update_n_at(rate, 1.0, 0),
-      Info { result: Ok(()), reset: ns(4), used: 1.0, free: 0.0 },
+      state.update_n_at(rate, 1, 0),
+      Info { result: Ok(()), reset: ns(4), used: 1, free: 0 },
     }
 
     assert_eq! {
-      state.update_n_at(rate, 1.0, 1),
-      Info { result: Err(Retry::After(ns(3))), reset: ns(3), used: 0.75, free: 0.25 },
+      state.update_n_at(rate, 1, 1),
+      Info { result: Err(Retry::After(ns(3))), reset: ns(3), used: 1, free: 0 },
     }
 
     assert_eq! {
-      state.update_n_at(rate, 1.0, 4),
-      Info { result: Ok(()), reset: ns(4), used: 1.0, free: 0.0 },
+      state.update_n_at(rate, 1, 4),
+      Info { result: Ok(()), reset: ns(4), used: 1, free: 0 },
+    }
+  }
+
+  #[test]
+  fn negative_amounts() {
+    let rate = Rate::new(4, ns(4));
+    let mut state = State::default();
+
+    assert_eq! {
+      state.update_n_at(rate, 3, 1),
+      Info { result: Ok(()), reset: ns(3), used: 3, free: 1 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, -2, 1),
+      Info { result: Ok(()), reset: ns(1), used: 1, free: 3 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, 2, 1),
+      Info { result: Ok(()), reset: ns(3), used: 3, free: 1 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, -10, 1),
+      Info { result: Ok(()), reset: ns(0), used: 0, free: 4 },
+    }
+
+    assert_eq! {
+      state.update_n_at(rate, 1, 1),
+      Info { result: Ok(()), reset: ns(1), used: 1, free: 3 },
     }
   }
 
   #[test]
   fn retry_never() {
-    let rate = Rate::new(1.0, ns(1));
+    let rate = Rate::new(1, ns(1));
     let mut state = State::default();
 
     assert_eq! {
-      state.update_n_at(rate, 2.0, 0),
-      Info { result: Err(Retry::Never), reset: ns(0), used: 0.0, free: 1.0 },
-    }
-  }
-
-  #[test]
-  fn rounding_and_precision() {
-    let rate = Rate::new(1.0, ns(1));
-    let mut state = State::default();
-
-    assert_eq! {
-      state.update_n_at(rate, 0.9, 0), // 0.9 rounded down to 0
-      Info { result: Ok(()), reset: ns(0), used: 0.0, free: 1.0 },
-    }
-
-    assert_eq! {
-      state.update_n_at(rate, 1.9, 0), // 1.9 rounded down to 1
-      Info { result: Ok(()), reset: ns(1), used: 1.0, free: 0.0 },
+      state.update_n_at(rate, 2, 1),
+      Info { result: Err(Retry::Never), reset: ns(0), used: 0, free: 1 },
     }
   }
 }
