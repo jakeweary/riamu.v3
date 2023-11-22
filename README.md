@@ -71,14 +71,14 @@ cargo clippy --workspace --fix --allow-dirty --allow-staged --broken-code # lint
 
 ```sh
 # acquire prod database over ssh
-ssh foo@bar.baz 'docker cp riamu.v3:/app/data - | gzip' | tar -xzvv --strip-components=1
+ssh foo@bar.baz 'docker cp riamu.v3:/app/data - | gzip' | tar -xzv --strip-components=1
 
 # query local database
-sqlite3 -header -box -cmd '.load deps/sqlean' db.sqlite
+sqlite3 -box -cmd '.load deps/sqlean' db.sqlite
 
 # query dockerized database
 docker run --volumes-from riamu.v3 --rm -it alpine \
-  sh -c 'apk add sqlite && sqlite3 -header -box /app/data/db.sqlite'
+  sh -c 'apk add sqlite && sqlite3 -box /app/data/db.sqlite'
 ```
 
 ## Roadmap
