@@ -20,6 +20,7 @@ mod repost {
   pub mod _4chan;
 }
 mod user {
+  pub mod profile;
   pub mod status {
     pub mod history;
   }
@@ -63,6 +64,8 @@ pub fn build() -> client::Commands {
       "4chan" => repost::_4chan::run,
     },
     "user" => {
+      "avatar" => user::profile::avatar,
+      "banner" => user::profile::banner,
       "status" => {
         "history" => user::status::history::run,
       },
