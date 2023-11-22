@@ -250,6 +250,17 @@ mod tests {
   }
 
   #[test]
+  fn floats() {
+    let rate = Rate::new(1.0, NS(1000));
+    let mut state = State::default();
+
+    let info = state.upd(rate, 0.123, 1, NORMAL);
+    assert_eq!(info.result, Ok(()));
+    assert_eq!(info.reset(), NS(123));
+    assert_eq!((info.ratio(), info.used(), info.remaining()), (0.123, 0.123, 0.877));
+  }
+
+  #[test]
   fn forced() {
     let rate = Rate::new(5.0, NS(5));
     let mut state = State::default();
