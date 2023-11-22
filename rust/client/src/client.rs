@@ -247,7 +247,7 @@ impl Client {
 
   async fn on_message(&self, ctx: serenity::Context, msg: serenity::Message) -> Result<()> {
     if msg.mentions_me(&ctx).await? {
-      let key = ("ping reply to", msg.author.id);
+      let key = ("ping reply", msg.channel_id);
       let rate = db::ratelimits::Rate::per_minute(1.0);
       let info = db::ratelimits::update(&self.db, key, rate).await?;
 
