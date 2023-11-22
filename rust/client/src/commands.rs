@@ -12,6 +12,7 @@ mod lookup {
 }
 mod meta {
   pub mod info;
+  pub mod shell;
   pub mod speed;
   pub mod speed_to_discord;
 }
@@ -56,6 +57,7 @@ pub fn build() -> client::Commands {
     },
     "meta" => {
       "info" => meta::info::run,
+      "shell" => meta::shell::run,
       "speed" => meta::speed::run,
       "speed-to-discord" => meta::speed_to_discord::run,
     },
