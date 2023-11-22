@@ -21,6 +21,7 @@ pangocairo.workspace = true
 procfs.workspace = true
 pyo3.workspace = true
 python.workspace = true
+rand.workspace = true
 regex-lite.workspace = true
 reqwest = { workspace = true, features = ["json"] }
 scraper.workspace = true
