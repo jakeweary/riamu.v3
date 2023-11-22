@@ -18,9 +18,9 @@ pub async fn update_n(pool: &Pool, key: impl Hash, rate: Rate, n: f64) -> sqlx::
 async fn update_n_inner(pool: &Pool, key: i64, rate: Rate, n: f64) -> sqlx::Result<Info> {
   let mut tx = pool.begin().await?;
 
-  let q = sqlx::query_as("select tat from gcra where key = ?");
-  let row = q.bind(key).fetch_optional(&mut *tx).await?;
-  let tat = row.map_or(0_i64, |(tat,)| tat) as u64;
+  let q = sqlx::query_scalar("select tat from gcra where key = ?");
+  let tat = q.bind(key).fetch_optional(&mut *tx).await?;
+  let tat = tat.unwrap_or(0_i64) as u64;
 
   let mut state = gcra::State { tat };
   let info = state.update_n(rate, n);
