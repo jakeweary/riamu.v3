@@ -23,7 +23,7 @@ async fn update_n_inner(pool: &Pool, key: i64, rate: Rate, n: f64) -> sqlx::Resu
   let tat = tat.unwrap_or(0_i64) as u64;
 
   let mut state = gcra::State { tat };
-  let info = state.update_n(rate, n);
+  let info = state.update(rate, n);
 
   if info.result.is_ok() {
     let q = sqlx::query("insert or replace into gcra (key, tat) values (?, ?)");
