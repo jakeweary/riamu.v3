@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use futures::StreamExt;
 use lib::fmt::num::Format;
-use lib::random::xorshift64;
+use rand::prelude::*;
 use serenity::all::*;
 
 use crate::client::{Context, Result};
@@ -13,8 +13,11 @@ use crate::client::{Context, Result};
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
-  let bytes = ctx.filesize_limit().await? - 512;
-  let buffer = xorshift64::bytes(ctx.id.0).take(bytes as usize).collect::<Vec<_>>();
+  let n_bytes = ctx.filesize_limit().await? - 512;
+
+  let mut buffer = vec![0; n_bytes as usize];
+  let mut rng = SmallRng::from_rng(&mut thread_rng())?;
+  rng.fill_bytes(&mut buffer);
 
   tracing::debug!("uploading…");
   let upload = Instant::now();
@@ -35,7 +38,7 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
   tracing::debug!("sending response…");
   let edit = EditInteractionResponse::new()
     .clear_attachments()
-    .content(content(bytes, upload, download)?);
+    .content(content(n_bytes, upload, download)?);
   ctx.event.edit_response(ctx, edit).await?;
 
   Ok(())

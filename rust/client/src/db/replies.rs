@@ -11,9 +11,8 @@ pub async fn random_reply(pool: &Pool) -> sqlx::Result<Option<String>> {
   let reply = match count {
     0 => None,
     n => {
-      let offset = Rng::gen_range::<i64, _>(&mut thread_rng(), 0..n);
-
       let q = sqlx::query_scalar("select reply from replies limit 1 offset ?");
+      let offset = thread_rng().gen_range(0_i64..n);
       let reply = q.bind(offset).fetch_one(&mut *tx).await?;
 
       Some(reply)
