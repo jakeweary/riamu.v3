@@ -64,32 +64,30 @@ pub fn expand(args: TokenStream, input: TokenStream) -> Result<TokenStream> {
     .collect::<Vec<_>>();
 
   let command = quote! {
+    #fn_async fn #fn_inner_ident(#fn_inputs) #fn_output #fn_block
+
     #fn_vis fn #fn_ident(name: &'static str) -> crate::client::Command {
-      #fn_async fn #fn_inner_ident(#fn_inputs) #fn_output #fn_block
+      use crate::client::*;
+      use std::{future::Future, pin::Pin};
 
-      {
-        use crate::client::*;
-        use std::{future::Future, pin::Pin};
+      #(static #cmd_option_names_static: CommandOption = #cmd_options;)*
 
-        #(static #cmd_option_names_static: CommandOption = #cmd_options;)*
+      fn run<'a>(#cmd_context: &'a Context<'_>) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
+        Box::pin(async {
+          #(let #cmd_option_names = CommandOptionTrait::extract({
+            #cmd_context.options.iter().find(|o| o.name == #cmd_option_names_static.name)
+          });)*
+          #fn_inner_ident(#cmd_context, #(#cmd_option_names),*).await
+        })
+      }
 
-        fn run<'a>(#cmd_context: &'a Context<'_>) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
-          Box::pin(async move {
-            #(let #cmd_option_names = CommandOptionTrait::extract({
-              #cmd_context.options.iter().find(|o| o.name == #cmd_option_names_static.name)
-            });)*
-            #fn_inner_ident(#cmd_context, #(#cmd_option_names),*).await
-          })
-        }
+      Command {
+        name,
+        description: #cmd_description,
+        owner_only: #cmd_owner_only,
 
-        Command {
-          name,
-          description: #cmd_description,
-          owner_only: #cmd_owner_only,
-
-          run,
-          options: [#(&#cmd_option_names_static),*].into(),
-        }
+        run,
+        options: [#(&#cmd_option_names_static),*].into(),
       }
     }
   };
