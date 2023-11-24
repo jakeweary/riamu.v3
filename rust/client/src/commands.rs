@@ -77,6 +77,7 @@ pub fn build() -> client::Commands {
       "int" => random::int,
       "real" => random::real,
       "coin" => random::coin,
+      "color" => random::color,
     },
   }
 }
