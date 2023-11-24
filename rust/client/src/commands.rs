@@ -3,6 +3,7 @@ use crate::client;
 mod deezer;
 mod download;
 mod imgur;
+mod random;
 mod tiktok;
 mod weather;
 mod lookup {
@@ -71,6 +72,11 @@ pub fn build() -> client::Commands {
       "status" => {
         "history" => user::status::history::run,
       },
+    },
+    "random" => {
+      "int" => random::int,
+      "real" => random::real,
+      "coin" => random::coin,
     },
   }
 }
