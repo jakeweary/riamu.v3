@@ -30,20 +30,20 @@ impl Handle {
 
   pub fn from_data(data: &[u8]) -> Result<Self> {
     let mut err = ptr::null_mut();
-    let rsvg = unsafe { c::rsvg_handle_new_from_data(data.as_ptr(), data.len() as u64, &mut err) };
+    let (data, data_len) = (data.as_ptr(), data.len() as u64);
+    let rsvg = unsafe { c::rsvg_handle_new_from_data(data, data_len, &mut err) };
     Self::from_ptr(rsvg).ok_or_else(|| unsafe { g_error(err) })
   }
 
   pub fn set_stylesheet(&self, css: &str) -> Result<()> {
     let mut err = ptr::null_mut();
-    let rsvg = self.ptr.as_ptr();
-    let ok = unsafe { c::rsvg_handle_set_stylesheet(rsvg, css.as_ptr(), css.len() as u64, &mut err) } != 0;
+    let (rsvg, css, css_len) = (self.ptr.as_ptr(), css.as_ptr(), css.len() as u64);
+    let ok = unsafe { c::rsvg_handle_set_stylesheet(rsvg, css, css_len, &mut err) } != 0;
     ok.then_some(()).ok_or_else(|| unsafe { g_error(err) })
   }
 
   pub fn render_cairo(&self, ctx: &cairo::Context) -> Result<()> {
-    let rsvg = self.ptr.as_ptr();
-    let ctx = ctx.to_raw_none() as *mut c::cairo_t;
+    let (rsvg, ctx) = (self.ptr.as_ptr(), ctx.to_raw_none().cast());
     let ok = unsafe { c::rsvg_handle_render_cairo(rsvg, ctx) } != 0;
     ok.then_some(()).ok_or(Error::Other)
   }

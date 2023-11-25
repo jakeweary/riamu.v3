@@ -19,7 +19,7 @@ pub async fn real(ctx: &Context<'_>, min: Option<f64>, max: Option<f64>) -> Resu
   reply(ctx, |msg| msg.content(text)).await
 }
 
-#[macros::command(description = "Flip a coin")]
+#[macros::command(description = "Toss a coin")]
 pub async fn coin(ctx: &Context<'_>) -> Result<()> {
   let coin = if random() { "heads" } else { "tails" };
   let text = format!("# \u{1fa99} {}", coin);

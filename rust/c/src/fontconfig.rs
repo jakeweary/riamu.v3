@@ -22,8 +22,8 @@ pub fn version() -> [c_int; 3] {
 
 pub fn add_file(path: impl AsRef<Path>) -> Result<()> {
   let path = CString::new(path.as_ref().as_os_str().as_bytes()).unwrap();
-  let path = path.as_ptr() as *const c::FcChar8;
-  match unsafe { c::FcConfigAppFontAddFile(ptr::null_mut(), path) } {
+  let (config, path) = (ptr::null_mut(), path.as_ptr().cast());
+  match unsafe { c::FcConfigAppFontAddFile(config, path) } {
     1 => Ok(()),
     _ => Err(Error),
   }
@@ -31,8 +31,8 @@ pub fn add_file(path: impl AsRef<Path>) -> Result<()> {
 
 pub fn add_dir(path: impl AsRef<Path>) -> Result<()> {
   let path = CString::new(path.as_ref().as_os_str().as_bytes()).unwrap();
-  let path = path.as_ptr() as *const c::FcChar8;
-  match unsafe { c::FcConfigAppFontAddDir(ptr::null_mut(), path) } {
+  let (config, path) = (ptr::null_mut(), path.as_ptr().cast());
+  match unsafe { c::FcConfigAppFontAddDir(config, path) } {
     1 => Ok(()),
     _ => Err(Error),
   }
