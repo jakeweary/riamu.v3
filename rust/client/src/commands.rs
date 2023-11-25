@@ -65,40 +65,24 @@ pub fn build() -> client::Commands {
       "speed" => meta::speed::run,
       "speed-to-discord" => meta::speed_to_discord::run,
     },
-    "repost" => {
-      "2ch" => repost::_2ch::run,
-      "4chan" => repost::_4chan::run,
-    },
-    "user" => {
-      "avatar" => user::profile::avatar,
-      "banner" => user::profile::banner,
-      "status" => {
-        "history" => user::status::history::run,
-      },
-    },
     "random" => {
       "int" => random::int,
       "real" => random::real,
       "coin" => random::coin,
       "color" => random::color,
     },
+    "repost" => {
+      "2ch" => repost::_2ch::run,
+      "4chan" => repost::_4chan::run,
+    },
     "text" => {
-      "style" => {
-        "regional-indicators" => text::style::regional_indicators,
-        "full-width" => text::style::full_width,
-        "monospace" => text::style::monospace,
-        "double-struck" => text::style::double_struck,
-        "fractur" => text::style::fractur,
-        "fractur-bold" => text::style::fractur_bold,
-        "script" => text::style::script,
-        "script-bold" => text::style::script_bold,
-        "serif-bold" => text::style::serif_bold,
-        "serif-italic" => text::style::serif_italic,
-        "serif-bold_italic" => text::style::serif_bold_italic,
-        "sans-serif" => text::style::sans_serif,
-        "sans-serif-bold" => text::style::sans_serif_bold,
-        "sans-serif-italic" => text::style::sans_serif_italic,
-        "sans-serif-bold-italic" => text::style::sans_serif_bold_italic,
+      "style" => text::style::run,
+    },
+    "user" => {
+      "avatar" => user::profile::avatar,
+      "banner" => user::profile::banner,
+      "status" => {
+        "history" => user::status::history::run,
       },
     },
   }
