@@ -1,6 +1,7 @@
 pub fn full_width(c: char) -> char {
   match c {
     '!'..='~' => cc(0xfee0 + c as u32),
+    ' ' => '\u{3000}',
     _ => c,
   }
 }
