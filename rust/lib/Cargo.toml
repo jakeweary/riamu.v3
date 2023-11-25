@@ -9,6 +9,7 @@ cairo-rs = { workspace = true, features = ["v1_16"] }
 chrono = { workspace = true, features = ["std"] }
 ego-tree.workspace = true
 futures.workspace = true
+rand_core.workspace = true
 regex-lite.workspace = true
 reqwest = { workspace = true, features = ["json", "stream"] }
 scraper.workspace = true

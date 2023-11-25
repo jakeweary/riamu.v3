@@ -23,6 +23,7 @@ pangocairo = "*"
 procfs = { version = "*", default-features = false }
 pyo3 = "*"
 rand = "*"
+rand_core = "*"
 rayon = "*"
 regex-lite = "*"
 reqwest = { version = "*", default-features = false }

@@ -4,6 +4,7 @@ use std::time::Instant;
 
 use futures::StreamExt;
 use lib::fmt::num::Format;
+use lib::random::XorShift64;
 use rand::prelude::*;
 use serenity::all::*;
 
@@ -16,7 +17,7 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
   let n_bytes = ctx.filesize_limit().await? - 512;
 
   let mut buffer = vec![0; n_bytes as usize];
-  let mut rng = SmallRng::from_rng(&mut thread_rng())?;
+  let mut rng = XorShift64::from_rng(&mut thread_rng())?;
   rng.fill_bytes(&mut buffer);
 
   tracing::debug!("uploading…");
