@@ -1,4 +1,4 @@
-pub fn full_width(c: char) -> char {
+pub fn fullwidth_cjk(c: char) -> char {
   match c {
     '!'..='~' => cc(0xfee0 + c as u32),
     ' ' => '\u{3000}',
@@ -138,6 +138,7 @@ pub mod sans_serif {
   }
 }
 
+#[allow(clippy::transmute_int_to_char)]
 #[inline(always)]
 fn cc(cc: u32) -> char {
   unsafe { std::mem::transmute(cc) }

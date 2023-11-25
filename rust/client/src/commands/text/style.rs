@@ -8,9 +8,9 @@ use crate::client::{Context, Result};
 #[derive(macros::Choice)]
 enum Style {
   #[name = "Regional indicators"]
-  RegionalIndicators,
-  #[name = "Full width"]
-  FullWidth,
+  Regional,
+  #[name = "Fullwidth CJK"]
+  Fullwidth,
   #[name = "Monospace"]
   Monospace,
   #[name = "Double struck"]
@@ -40,10 +40,10 @@ enum Style {
 }
 
 #[macros::command(description = "Text style")]
-pub async fn run(ctx: &Context<'_>, input: &str, style: Style) -> Result<()> {
+pub async fn run(ctx: &Context<'_>, style: Style, input: &str) -> Result<()> {
   let f = match style {
-    Style::RegionalIndicators => style::regional_indicators,
-    Style::FullWidth => style::full_width,
+    Style::Regional => style::regional_indicators,
+    Style::Fullwidth => style::fullwidth_cjk,
     Style::Monospace => style::monospace,
     Style::DoubleStruck => style::double_struck,
     Style::Fractur => style::fractur::regular,
@@ -60,7 +60,7 @@ pub async fn run(ctx: &Context<'_>, input: &str, style: Style) -> Result<()> {
   };
 
   let input = match style {
-    Style::RegionalIndicators => Cow::Owned(format!("`{}`", input)),
+    Style::Regional => Cow::Owned(format!("`{}`", input)),
     _ => Cow::Borrowed(input),
   };
 

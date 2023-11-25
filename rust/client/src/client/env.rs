@@ -2,9 +2,11 @@
 
 use std::env::{self, VarError};
 use std::error::Error as StdError;
+use std::path::PathBuf;
 use std::result::Result as StdResult;
 
 use serenity::all::*;
+use url::Url;
 
 type Error = Box<dyn StdError + Send + Sync>;
 type Result<T> = StdResult<T, Error>;
@@ -42,11 +44,11 @@ macro_rules! impl_env {
 
 impl_env! {
   DATABASE_URL => database_url;
-  CACHE_WORKING_DIR => cache_working_dir;
-  CACHE_BASE_URL => cache_base_url;
-  CACHE_LIMIT_GiB => cache_limit_GiB: |id| -> u64 { id?.parse()? };
+  CACHE_WORKING_DIR => cache_working_dir: |e| -> PathBuf { e?.into() };
+  CACHE_BASE_URL => cache_base_url: |e| -> Url { e?.parse()? };
+  CACHE_LIMIT_GiB => cache_limit_GiB: |e| -> u64 { e?.parse()? };
   DISCORD_TOKEN => discord_token;
-  DISCORD_DEV_SERVER_ID => discord_dev_server: |id| -> GuildId { id?.parse::<u64>()?.into() };
+  DISCORD_DEV_SERVER_ID => discord_dev_server: |e| -> GuildId { e?.parse::<u64>()?.into() };
   DISCORD_DEV_SERVER_INVITE => discord_dev_server_invite;
   DEEZER_ARL => deezer_arl;
   SPOTIFY_APP_ID => spotify_app_id;

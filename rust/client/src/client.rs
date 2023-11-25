@@ -54,8 +54,8 @@ impl Client {
     let commands = crate::commands::build();
     let db = db::init(&env.database_url).await?;
     let cache = {
-      let base_url = &env.cache_base_url;
-      let working_dir = &env.cache_working_dir;
+      let base_url = env.cache_base_url.clone();
+      let working_dir = env.cache_working_dir.clone();
       let limit_bytes = env.cache_limit_GiB << 30;
       let cache = LruFileCache::new(base_url, working_dir, limit_bytes).await?;
       Arc::new(cache)

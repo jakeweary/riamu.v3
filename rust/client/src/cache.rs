@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::ffi::OsString;
 use std::hash::Hasher;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
@@ -9,9 +10,8 @@ use filetime::FileTime;
 use futures::StreamExt;
 use inotify::{EventMask, Inotify, WatchMask};
 use lib::fmt::num::Format;
+use lib::task;
 use lru::LruCache;
-use reqwest::IntoUrl;
-use tokio::io::AsyncReadExt;
 use tokio::sync::Mutex;
 use url::Url;
 
@@ -30,24 +30,24 @@ pub struct LruFileCache {
 }
 
 #[derive(Debug)]
-struct State {
-  bytes_stored: u64,
-  files: LruCache<OsString, File>,
-}
-
-#[derive(Debug)]
 struct File {
   size: u64,
 }
 
 impl LruFileCache {
-  pub async fn new(base_url: impl IntoUrl, path: impl AsRef<Path>, bytes_limit: u64) -> io::Result<Self> {
+  pub async fn new(base_url: Url, working_dir: PathBuf, bytes_limit: u64) -> io::Result<Self> {
     tracing::debug!("initializing cache…");
+
+    let state = {
+      let path = working_dir.clone();
+      task::spawn_blocking(move || State::new(path)).await??
+    };
+
     let cache = Self {
+      state: state.into(),
       bytes_limit,
-      base_url: base_url.into_url().unwrap(),
-      working_dir: path.as_ref().to_path_buf(),
-      state: State::new(path).await?.into(),
+      base_url,
+      working_dir,
     };
 
     tracing::debug!("initializing cache: done");
@@ -96,14 +96,9 @@ impl LruFileCache {
     };
     tracing::debug!(?name, "storing a {}B file…", size.iec());
 
-    let mut hasher = DefaultHasher::new();
-    let mut buffer = [0; 1 << 16];
-    let mut file = tokio::fs::File::open(path).await?;
-    let hash = loop {
-      match file.read(&mut buffer[..]).await? {
-        0 => break hasher.finish(),
-        n => hasher.write(&buffer[..n]),
-      }
+    let hash = {
+      let path = path.to_owned();
+      task::spawn_blocking(move || hash_file(&path)).await??
     };
 
     let hash = format!("{:016x}", hash);
@@ -131,9 +126,9 @@ impl LruFileCache {
   }
 
   async fn reserve(&self, bytes: u64) -> io::Result<bool> {
-    if bytes > self.bytes_limit {
-      Ok(false)
-    } else {
+    let fits = bytes <= self.bytes_limit;
+
+    if fits {
       let mut state = self.state.lock().await;
       let overshoot = (state.bytes_stored + bytes).saturating_sub(self.bytes_limit);
       tracing::debug!("reserving {}B (overshoot: {}B)", bytes.iec(), overshoot.iec());
@@ -143,9 +138,9 @@ impl LruFileCache {
         tracing::debug!(?name, "removing a {}B file…", file.size.iec());
         tokio::fs::remove_file(&self.working_dir.join(&name)).await?;
       }
-
-      Ok(true)
     }
+
+    Ok(fits)
   }
 
   async fn log_stats(&self) {
@@ -166,18 +161,16 @@ impl LruFileCache {
   }
 }
 
-impl State {
-  async fn new(path: impl AsRef<Path>) -> io::Result<Self> {
-    let path = path.as_ref().to_path_buf();
-    let span = tracing::Span::current();
-    let new = tokio::task::spawn_blocking(move || {
-      let _span = span.entered();
-      State::new_blocking(path)
-    });
-    new.await.unwrap()
-  }
+// ---
 
-  fn new_blocking(path: PathBuf) -> io::Result<Self> {
+#[derive(Debug)]
+struct State {
+  bytes_stored: u64,
+  files: LruCache<OsString, File>,
+}
+
+impl State {
+  fn new(path: PathBuf) -> io::Result<Self> {
     tracing::trace!("mkdir -p {:?}", path);
     fs::create_dir_all(&path)?;
 
@@ -214,5 +207,20 @@ impl State {
     let (name, file) = self.files.pop_lru()?;
     self.bytes_stored -= file.size;
     Some((name, file))
+  }
+}
+
+// ---
+
+fn hash_file(path: &Path) -> io::Result<u64> {
+  let mut hasher = DefaultHasher::new();
+  let mut buffer = [0; 1 << 12];
+  let mut file = fs::File::open(path)?;
+
+  loop {
+    match file.read(&mut buffer[..])? {
+      0 => break Ok(hasher.finish()),
+      n => hasher.write(&buffer[..n]),
+    }
   }
 }
