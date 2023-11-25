@@ -21,6 +21,9 @@ mod repost {
   pub mod _2ch;
   pub mod _4chan;
 }
+mod text {
+  pub mod style;
+}
 mod user {
   pub mod profile;
   pub mod status {
@@ -78,6 +81,25 @@ pub fn build() -> client::Commands {
       "real" => random::real,
       "coin" => random::coin,
       "color" => random::color,
+    },
+    "text" => {
+      "style" => {
+        "regional-indicators" => text::style::regional_indicators,
+        "full-width" => text::style::full_width,
+        "monospace" => text::style::monospace,
+        "double-struck" => text::style::double_struck,
+        "fractur" => text::style::fractur,
+        "fractur-bold" => text::style::fractur_bold,
+        "script" => text::style::script,
+        "script-bold" => text::style::script_bold,
+        "serif-bold" => text::style::serif_bold,
+        "serif-italic" => text::style::serif_italic,
+        "serif-bold_italic" => text::style::serif_bold_italic,
+        "sans-serif" => text::style::sans_serif,
+        "sans-serif-bold" => text::style::sans_serif_bold,
+        "sans-serif-italic" => text::style::sans_serif_italic,
+        "sans-serif-bold-italic" => text::style::sans_serif_bold_italic,
+      },
     },
   }
 }

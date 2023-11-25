@@ -122,8 +122,8 @@ impl Json {
   }
 
   fn embed(&self) -> CreateEmbed {
-    let title = lib::text::strip_html(&self.title());
-    let desc = lib::text::strip_html(&self.description().unwrap());
+    let title = lib::html::strip(&self.title());
+    let desc = lib::html::strip(&self.description().unwrap());
     let embed = CreateEmbed::new().url(&self.url).title(title).description(desc);
 
     match &self.image {

@@ -1,7 +1,7 @@
 use ego_tree::NodeRef;
 use scraper::{Html, Node};
 
-pub fn strip_html(html: &str) -> String {
+pub fn strip(html: &str) -> String {
   fn visit(acc: &mut String, node: NodeRef<'_, Node>) {
     for node in node.children() {
       match node.value() {
