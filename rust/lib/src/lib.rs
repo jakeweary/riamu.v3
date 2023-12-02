@@ -9,6 +9,7 @@ pub mod task;
 pub mod cairo {
   pub mod blur;
   pub mod ext;
+  pub mod util;
 }
 pub mod hash {
   pub mod splitmix64;

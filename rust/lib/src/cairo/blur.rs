@@ -1,12 +1,14 @@
 use std::f32::consts::TAU;
 use std::{array, iter, slice};
 
-pub fn gaussian_blur(srf: &mut cairo::ImageSurface, sigma: f32) -> cairo::Result<()> {
+use cairo::*;
+
+pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
   let width = srf.width();
   let height = srf.height();
 
   // NOTE: this buffer is transposed to make it a bit more cache-friendly on the 2nd step
-  let mut tmp = cairo::ImageSurface::create(cairo::Format::ARgb32, height, width)?;
+  let mut tmp = ImageSurface::create(Format::ARgb32, height, width)?;
   let mut tmp = tmp.data().unwrap();
   let mut srf = srf.data().unwrap();
 

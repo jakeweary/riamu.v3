@@ -3,7 +3,8 @@ use std::fmt::Display;
 
 use cairo::{Filter, FontSlant, FontWeight, Format, ImageSurface, SurfacePattern};
 use chrono::{DateTime, Days, FixedOffset, Local, Offset, TimeZone, Timelike, Utc};
-use lib::{cairo::ext::*, task};
+use lib::cairo::{ext::*, util::resize};
+use lib::task;
 use serenity::all::*;
 
 use crate::client::{err, Context, Result};
@@ -77,15 +78,18 @@ where
 
   // ---
 
-  let data = status_history_data(dt, statuses)?;
-  let pat = SurfacePattern::create(&data);
-  pat.set_filter(Filter::Nearest);
+  {
+    let img = status_history_data(dt, statuses)?;
+    let img = resize(&img, Filter::Good, SCALE * CELL_W * 24, 30)?;
+    let pat = SurfacePattern::create(&img);
+    pat.set_filter(Filter::Nearest);
 
-  ctx.save()?;
-  ctx.scale(1.0, CELL_H as f64);
-  ctx.set_source(pat)?;
-  ctx.paint()?;
-  ctx.restore()?;
+    ctx.save()?;
+    ctx.scale(1.0 / SCALE as f64, CELL_H as f64);
+    ctx.set_source(pat)?;
+    ctx.paint()?;
+    ctx.restore()?;
+  }
 
   // ---
 
@@ -154,16 +158,19 @@ where
   let now = dt.timestamp();
   let tomorrow = next_day(dt).timestamp();
 
-  let px = 60 * 60 / (CELL_W - 1) as usize; // seconds in one pixel
-  let w = 24 * CELL_W;
+  let px_sec = 5; // seconds per pixel
+  let cell_px = 60 * 60 / px_sec; // pixels per cell
+  let gap_px = 60 * 60 / px_sec / (CELL_W - 1) as usize; // pixels per gap
+
+  let w = 24 * (cell_px + gap_px) as i32;
   let h = 30;
 
   let mut img = ImageSurface::create(Format::ARgb32, w, h)?;
   let mut data = img.data().unwrap();
 
   let mut draw = |packed: statuses::Packed, start, end| {
-    let i0 = (tomorrow - end) as usize / px;
-    let i1 = (tomorrow - start) as usize / px;
+    let i0 = (tomorrow - end) as usize / px_sec;
+    let i1 = (tomorrow - start) as usize / px_sec;
 
     if i0 != i1 {
       let color = match packed.status() {
@@ -175,7 +182,7 @@ where
       };
 
       for mut i in i0..i1 {
-        i += i / (CELL_W - 1) as usize; // 1px gap between each hour
+        i += i / cell_px * gap_px; // gap between each hour
         i *= 4;
         match data.get_mut(i..i + 4) {
           Some(c) => c.copy_from_slice(&color),
