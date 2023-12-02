@@ -9,7 +9,7 @@ use lib::task;
 use serenity::all::*;
 
 use crate::client::{err, Context, Result};
-use crate::db::{self, statuses};
+use crate::db::statuses;
 
 #[macros::command(description = "Show one month of someone's status history")]
 pub async fn run(
@@ -24,7 +24,7 @@ pub async fn run(
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("querying database…");
-  let statuses = db::statuses::query(&ctx.client.db, user.id, "-30 days").await?;
+  let statuses = statuses::query(&ctx.client.db, user.id, "-30 days").await?;
 
   tracing::debug!("rendering image…");
   let png = task::spawn_blocking(move || -> Result<_> {
@@ -51,7 +51,7 @@ const IMAGE_H: i32 = 350;
 const CELL_W: i32 = 19;
 const CELL_H: i32 = 10;
 
-fn status_history<Tz>(dt: DateTime<Tz>, statuses: &[db::statuses::Row]) -> cairo::Result<ImageSurface>
+fn status_history<Tz>(dt: DateTime<Tz>, statuses: &[statuses::Row]) -> cairo::Result<ImageSurface>
 where
   Tz: TimeZone,
   Tz::Offset: Display,
@@ -152,7 +152,7 @@ where
   Ok(img)
 }
 
-fn status_history_data<Tz>(dt: DateTime<Tz>, statuses: &[db::statuses::Row]) -> cairo::Result<ImageSurface>
+fn status_history_data<Tz>(dt: DateTime<Tz>, statuses: &[statuses::Row]) -> cairo::Result<ImageSurface>
 where
   Tz: TimeZone,
 {

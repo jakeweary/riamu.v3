@@ -8,7 +8,7 @@ use procfs::{process::*, *};
 use serenity::all::*;
 
 use crate::client::{Context, Result};
-use crate::db;
+use crate::db::{self, counters::Counter};
 
 #[macros::command(description = "Show some technical info about me")]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
@@ -62,7 +62,7 @@ fn desc(load: &LoadAverage, prev: &KernelStats, curr: &KernelStats) -> StdResult
   Ok(acc)
 }
 
-fn footer(counters: &[db::counters::Counter]) -> StdResult<CreateEmbedFooter, fmt::Error> {
+fn footer(counters: &[Counter]) -> StdResult<CreateEmbedFooter, fmt::Error> {
   let mut acc = String::new();
   for (i, counter) in counters.iter().enumerate() {
     let sep = if i == 0 { "received" } else { "," };
