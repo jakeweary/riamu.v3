@@ -174,7 +174,7 @@ where
 
     if i0 != i1 {
       let color = match packed.status() {
-        OnlineStatus::Offline => 0xff_80848e_u32.to_be_bytes(),
+        OnlineStatus::Offline => 0xff_3f4248_u32.to_be_bytes(),
         OnlineStatus::Online => 0xff_23a55a_u32.to_be_bytes(),
         OnlineStatus::Idle => 0xff_f0b232_u32.to_be_bytes(),
         OnlineStatus::DoNotDisturb => 0xff_f23f43_u32.to_be_bytes(),
