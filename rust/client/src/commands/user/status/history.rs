@@ -1,5 +1,6 @@
 use std::f64::consts::TAU as τ;
 use std::fmt::Display;
+use std::slice;
 
 use cairo::{Filter, FontSlant, FontWeight, Format, ImageSurface, SurfacePattern};
 use chrono::{DateTime, Days, FixedOffset, Local, Offset, TimeZone, Timelike, Utc};
@@ -168,28 +169,31 @@ where
   let mut img = ImageSurface::create(Format::ARgb32, w, h)?;
   let mut data = img.data().unwrap();
 
-  let mut draw = |packed: statuses::Packed, start, end| {
+  let data_u32 = {
+    let ptr = data.as_mut_ptr() as *mut u32;
+    let len = data.len() / 4;
+    unsafe { slice::from_raw_parts_mut(ptr, len) }
+  };
+
+  let mut draw = |status: statuses::Packed, start, end| {
     let i0 = (tomorrow - end) as usize / px_sec;
     let i1 = (tomorrow - start) as usize / px_sec;
 
-    if i0 != i1 {
-      let color = match packed.status() {
-        OnlineStatus::Offline => 0xff_3f4248_u32.to_be_bytes(),
-        OnlineStatus::Online => 0xff_23a55a_u32.to_be_bytes(),
-        OnlineStatus::Idle => 0xff_f0b232_u32.to_be_bytes(),
-        OnlineStatus::DoNotDisturb => 0xff_f23f43_u32.to_be_bytes(),
-        _ => panic!(),
-      };
+    let i0 = i0 + i0 / cell_px * gap_px; // gaps between each hour
+    let i1 = i1 + i1 / cell_px * gap_px;
 
-      for mut i in i0..i1 {
-        i += i / cell_px * gap_px; // gap between each hour
-        i *= 4;
-        match data.get_mut(i..i + 4) {
-          Some(c) => c.copy_from_slice(&color),
-          None => break,
-        }
-      }
-    }
+    let i0 = i0.min(data_u32.len());
+    let i1 = i1.min(data_u32.len());
+
+    let rgb = match status.status() {
+      OnlineStatus::Offline => 0x3f4248,
+      OnlineStatus::Online => 0x23a55a,
+      OnlineStatus::Idle => 0xf0b232,
+      OnlineStatus::DoNotDisturb => 0xf23f43,
+      _ => panic!(),
+    };
+
+    data_u32[i0..i1].fill(0xff000000 | rgb);
   };
 
   for [start, end] in statuses.array_windows() {
@@ -200,7 +204,7 @@ where
     draw(last.status, last.time, now);
   }
 
-  data.reverse();
+  data_u32.reverse();
   drop(data);
 
   Ok(img)
