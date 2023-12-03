@@ -1,7 +1,9 @@
 use cairo::*;
+use chrono::Offset;
 
-use crate::cairo::ext::ContextExt;
+use crate::cairo::{ext::ContextExt, util::text_width};
 use crate::fmt::num::Format;
+use crate::weather::render::codes::CODES;
 
 use super::fmt::Num;
 use super::Result;
@@ -11,7 +13,13 @@ pub fn current(ctx: &Context, weather: &api::Onecall, loc: &api::geo::Location) 
   ctx.save()?;
   ctx.translate(12.0, 8.0);
 
+  let city = loc.local_names.en.as_ref().unwrap_or(&loc.name);
+  let country = CODES.iter().find(|(code, _)| &loc.country == code);
+
   let dt = util::datetime(weather.timezone_offset, weather.current.dt);
+  let tz_offset_min = dt.offset().fix().local_minus_utc() / 60;
+  let tz_fmt = if tz_offset_min % 60 == 0 { "UTC%:::z" } else { "UTC%:z" };
+
   let font_size = 10.0;
   util::cairo::set_font_variations(ctx, "opsz=10,wdth=50")?;
   ctx.set_font_size(font_size);
@@ -19,7 +27,7 @@ pub fn current(ctx: &Context, weather: &api::Onecall, loc: &api::geo::Location) 
   ctx.move_to(0.0, font_size);
   ctx.show_text(&dt.format("%A, %B %-e, %H:%M ").to_string())?;
   ctx.set_source_rgb_u32(0x949ba4);
-  ctx.show_text(&dt.format("%:z").to_string().replace('-', "\u{2212}"))?;
+  ctx.show_text(&dt.format(tz_fmt).to_string().replace('-', "\u{2212}"))?;
   ctx.translate(0.0, font_size);
 
   let font_size = 18.0;
@@ -28,7 +36,13 @@ pub fn current(ctx: &Context, weather: &api::Onecall, loc: &api::geo::Location) 
   ctx.set_source_rgb_u32(0xffffff);
   ctx.translate(0.0, font_size + 8.0);
   ctx.move_to(0.0, 0.0);
-  ctx.show_text(loc.local_names.en.as_ref().unwrap_or(&loc.name))?;
+  ctx.show_text(city)?;
+  ctx.set_source_rgb_u32(0x949ba4);
+  ctx.show_text(" ")?;
+  ctx.show_text(match country {
+    Some(&(_, country)) if text_width(ctx, &[city, " ", country])? < 200.0 => country,
+    _ => &loc.country,
+  })?;
 
   let font_size = 10.0;
   util::cairo::set_font_variations(ctx, "opsz=10,wdth=50")?;

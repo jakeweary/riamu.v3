@@ -7,6 +7,7 @@ use crate::cairo::ext::ContextExt;
 
 use super::api;
 
+mod codes;
 mod components;
 mod draw;
 mod fmt;

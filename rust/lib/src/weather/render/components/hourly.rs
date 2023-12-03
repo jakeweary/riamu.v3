@@ -70,6 +70,31 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.translate(0.0, -7.5 - font_size);
   }
 
+  // TODO: not finished
+  //
+  // // sun
+  // {
+  //   let px = w / 3600.0; // seconds to pixels
+  //   let zero = weather.hourly[0].dt;
+  //
+  //   ctx.save()?;
+  //   ctx.translate(0.5 * w, 0.0);
+  //   ctx.new_path();
+  //
+  //   for day in &weather.daily {
+  //     ctx.move_to(px * (day.sunrise - zero) as f64, 0.0);
+  //     ctx.line_to(px * (day.sunset - zero) as f64, 0.0);
+  //   }
+  //
+  //   ctx.set_line_width(1.0);
+  //   ctx.set_line_cap(LineCap::Round);
+  //   ctx.set_source_rgb_u32(discord::colors::TABLE[5].light);
+  //   ctx.stroke()?;
+  //   ctx.restore()?;
+  //
+  //   ctx.translate(0.0, -4.0);
+  // }
+
   // temps
   {
     let temp = Range::of(&weather.hourly, |h| h.temp);
