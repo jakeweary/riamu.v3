@@ -26,6 +26,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
 
   let background = || -> cairo::Result<_> {
     ctx.save()?;
+    ctx.set_line_cap(LineCap::Round);
 
     ctx.new_path();
     for i in 0..weather.hourly.len() {
@@ -33,6 +34,12 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       ctx.move_to(x, 0.0);
       ctx.line_to(x, -height);
     }
+    ctx.move_to(0.0, -1.0 / 4.0 * height);
+    ctx.line_to(width, -1.0 / 4.0 * height);
+    ctx.move_to(0.0, -2.0 / 4.0 * height);
+    ctx.line_to(width, -2.0 / 4.0 * height);
+    ctx.move_to(0.0, -3.0 / 4.0 * height);
+    ctx.line_to(width, -3.0 / 4.0 * height);
     ctx.set_source_rgb_u32(0x2b2d31);
     ctx.stroke()?;
 
@@ -41,7 +48,6 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.line_to(width, 0.0);
     ctx.move_to(0.0, -height);
     ctx.line_to(width, -height);
-    ctx.set_line_cap(LineCap::Round);
     ctx.set_source_rgb_u32(0x232428);
     ctx.stroke()?;
 
@@ -123,14 +129,19 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("°C")),
     ])?;
 
-    ctx.move_to(6.0 + width, 3.5 - height);
     ctx.set_source_rgb_u32(0xffffff);
+    ctx.move_to(6.0 + width, 3.5);
+    ctx.show_text(&format!("{:.0}", Num(range.min)))?;
+    ctx.move_to(6.0 + width, 3.5 - 1.0 / 4.0 * height);
+    ctx.show_text(&format!("{:.0}", Num(range.lerp(1.0 / 4.0))))?;
+    ctx.move_to(6.0 + width, 3.5 - 2.0 / 4.0 * height);
+    ctx.show_text(&format!("{:.0}", Num(range.lerp(2.0 / 4.0))))?;
+    ctx.move_to(6.0 + width, 3.5 - 3.0 / 4.0 * height);
+    ctx.show_text(&format!("{:.0}", Num(range.lerp(3.0 / 4.0))))?;
+    ctx.move_to(6.0 + width, 3.5 - height);
     ctx.show_text(&format!("{:.0}", Num(range.max)))?;
     ctx.set_source_rgb_u32(0x949ba4);
     ctx.show_text("°C")?;
-    ctx.move_to(6.0 + width, 3.5);
-    ctx.set_source_rgb_u32(0xffffff);
-    ctx.show_text(&format!("{:.0}", Num(range.min)))?;
 
     ctx.translate(0.5 * w, 0.0);
     ctx.set_line_cap(LineCap::Round);
@@ -176,14 +187,19 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("m/s")),
     ])?;
 
-    ctx.move_to(6.0 + width, 3.5 - height);
     ctx.set_source_rgb_u32(0xffffff);
+    ctx.move_to(6.0 + width, 3.5);
+    ctx.show_text(&format!("{:#.2}", Num(range.min)))?;
+    ctx.move_to(6.0 + width, 3.5 - 1.0 / 4.0 * height);
+    ctx.show_text(&format!("{:#.2}", Num(range.lerp(1.0 / 4.0))))?;
+    ctx.move_to(6.0 + width, 3.5 - 2.0 / 4.0 * height);
+    ctx.show_text(&format!("{:#.2}", Num(range.lerp(2.0 / 4.0))))?;
+    ctx.move_to(6.0 + width, 3.5 - 3.0 / 4.0 * height);
+    ctx.show_text(&format!("{:#.2}", Num(range.lerp(3.0 / 4.0))))?;
+    ctx.move_to(6.0 + width, 3.5 - height);
     ctx.show_text(&format!("{:#.2}", Num(range.max)))?;
     ctx.set_source_rgb_u32(0x949ba4);
     ctx.show_text("m/s")?;
-    ctx.move_to(6.0 + width, 3.5);
-    ctx.set_source_rgb_u32(0xffffff);
-    ctx.show_text("0")?;
 
     ctx.translate(0.5 * w, 0.0);
 
@@ -245,14 +261,19 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ])?;
 
     if rain.max > 0.0 || snow.max > 0.0 {
-      ctx.move_to(6.0 + width, 3.5 - height);
       ctx.set_source_rgb_u32(0xffffff);
+      ctx.move_to(6.0 + width, 3.5);
+      ctx.show_text(&format!("{:#.2}", Num(range.min)))?;
+      ctx.move_to(6.0 + width, 3.5 - 1.0 / 4.0 * height);
+      ctx.show_text(&format!("{:#.2}", Num(range.lerp(1.0 / 4.0))))?;
+      ctx.move_to(6.0 + width, 3.5 - 2.0 / 4.0 * height);
+      ctx.show_text(&format!("{:#.2}", Num(range.lerp(2.0 / 4.0))))?;
+      ctx.move_to(6.0 + width, 3.5 - 3.0 / 4.0 * height);
+      ctx.show_text(&format!("{:#.2}", Num(range.lerp(3.0 / 4.0))))?;
+      ctx.move_to(6.0 + width, 3.5 - height);
       ctx.show_text(&format!("{:#.2}", Num(range.max)))?;
       ctx.set_source_rgb_u32(0x949ba4);
       ctx.show_text("mm/h")?;
-      ctx.move_to(6.0 + width, 3.5);
-      ctx.set_source_rgb_u32(0xffffff);
-      ctx.show_text("0")?;
     }
 
     ctx.new_path();

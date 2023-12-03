@@ -19,6 +19,10 @@ impl Range {
   pub fn normalize(self, value: f64) -> f64 {
     (value - self.min) / (self.max - self.min)
   }
+
+  pub fn lerp(self, t: f64) -> f64 {
+    self.min + t * (self.max - self.min)
+  }
 }
 
 impl BitAnd for Range {
