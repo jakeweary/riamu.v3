@@ -17,9 +17,9 @@ pub struct Root {
 
 #[derive(Debug, Deserialize)]
 pub struct Current {
-  pub dt: i64,      // unix time
-  pub sunrise: i64, // unix time
-  pub sunset: i64,  // unix time
+  pub dt: i64,              // unix time
+  pub sunrise: Option<i64>, // unix time
+  pub sunset: Option<i64>,  // unix time
 
   pub temp: f64,       // °C
   pub feels_like: f64, // °C
@@ -74,8 +74,8 @@ pub struct Hour {
 #[derive(Debug, Deserialize)]
 pub struct Day {
   pub dt: i64,       // unix time
-  pub sunrise: i64,  // unix time
-  pub sunset: i64,   // unix time
+  pub sunrise: i64,  // unix time (can be zero)
+  pub sunset: i64,   // unix time (can be zero)
   pub moonrise: i64, // unix time
   pub moonset: i64,  // unix time
   pub moon_phase: f64,
