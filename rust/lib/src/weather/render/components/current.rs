@@ -31,14 +31,14 @@ pub fn current(ctx: &Context, weather: &api::Onecall, loc: &api::geo::Location) 
   ctx.translate(0.0, font_size);
 
   let font_size = 18.0;
-  util::cairo::set_font_variations(ctx, "opsz=18")?;
+  util::cairo::set_font_variations(ctx, "opsz=18,wght=600")?;
   ctx.set_font_size(font_size);
   ctx.set_source_rgb_u32(0xffffff);
   ctx.translate(0.0, font_size + 8.0);
   ctx.move_to(0.0, 0.0);
   ctx.show_text(city)?;
-  ctx.set_source_rgb_u32(0x949ba4);
   ctx.show_text(" ")?;
+  util::cairo::set_font_variations(ctx, "opsz=18,wght=200")?;
   ctx.show_text(match country {
     Some(&(_, country)) if text_width(ctx, &[city, " ", country])? < 200.0 => country,
     _ => &loc.country,
