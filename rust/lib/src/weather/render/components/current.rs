@@ -3,7 +3,7 @@ use chrono::Offset;
 
 use crate::cairo::{ext::ContextExt, util::text_width};
 use crate::fmt::num::Format;
-use crate::weather::render::codes::CODES;
+use crate::weather::render::iso3166::TABLE as ISO3166;
 
 use super::fmt::Num;
 use super::Result;
@@ -14,7 +14,7 @@ pub fn current(ctx: &Context, weather: &api::Onecall, loc: &api::geo::Location) 
   ctx.translate(12.0, 8.0);
 
   let city = loc.local_names.en.as_ref().unwrap_or(&loc.name);
-  let country = CODES.iter().find(|(code, _)| &loc.country == code);
+  let country = ISO3166.iter().find(|(code, _)| &loc.country == code);
 
   let dt = util::datetime(weather.timezone_offset, weather.current.dt);
   let tz_offset_min = dt.offset().fix().local_minus_utc() / 60;

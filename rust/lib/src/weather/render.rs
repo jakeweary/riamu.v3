@@ -7,11 +7,11 @@ use crate::cairo::ext::ContextExt;
 
 use super::api;
 
-mod codes;
 mod components;
 mod draw;
 mod fmt;
 mod icons;
+mod iso3166;
 mod range;
 mod util;
 

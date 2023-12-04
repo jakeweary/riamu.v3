@@ -12,16 +12,22 @@ impl Range {
     items.iter().fold(Self { min, max }, |acc, item| acc & map(item))
   }
 
-  pub fn round_simple(self, n: f64) -> Self {
+  pub fn round(self) -> Self {
+    let min = (0.5 + self.min).floor();
+    let max = (0.5 + self.max).floor();
+    Self { min, max }
+  }
+
+  pub fn round_n_abs(self, n: f64) -> Self {
     let min = n * (self.min / n).floor();
     let max = n * (self.max / n).ceil();
     Self { min, max }
   }
 
-  pub fn round_tight(self, n: f64) -> Self {
+  pub fn round_n_rel(self, n: f64) -> Self {
     let range = n * ((self.max - self.min) / n).ceil();
-    let min = (0.5 + 0.5 * (self.min + self.max - range)).floor();
-    let max = (0.5 + 0.5 * (self.min + self.max + range)).floor();
+    let min = 0.5 * (self.min + self.max - range);
+    let max = 0.5 * (self.min + self.max + range);
     Self { min, max }
   }
 

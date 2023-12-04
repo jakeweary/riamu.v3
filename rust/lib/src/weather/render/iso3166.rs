@@ -1,7 +1,7 @@
 // slightly modified version of:
 // https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes
 
-pub const CODES: &[(&str, &str)] = &[
+pub const TABLE: &[(&str, &str)] = &[
   ("AD", "Andorra"),
   ("AE", "United Arab Emirates"),
   ("AF", "Afghanistan"),
@@ -78,7 +78,7 @@ pub const CODES: &[(&str, &str)] = &[
   ("FO", "Faroe Islands"),
   ("FR", "France"),
   ("GA", "Gabon"),
-  ("GB", "Great Britain"),
+  ("GB", "United Kingdom of Great Britain"),
   ("GD", "Grenada"),
   ("GE", "Georgia"),
   ("GF", "French Guiana"),

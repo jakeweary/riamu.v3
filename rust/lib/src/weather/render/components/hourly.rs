@@ -24,7 +24,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   util::cairo::set_font_variations(ctx, "opsz=10,wdth=50")?;
   ctx.set_font_size(font_size);
 
-  let background = || -> cairo::Result<_> {
+  let lines = || -> cairo::Result<_> {
     ctx.save()?;
     ctx.set_line_cap(LineCap::Round);
 
@@ -34,12 +34,11 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       ctx.move_to(x, 0.0);
       ctx.line_to(x, -height);
     }
-    ctx.move_to(0.0, -1.0 / 4.0 * height);
-    ctx.line_to(width, -1.0 / 4.0 * height);
-    ctx.move_to(0.0, -2.0 / 4.0 * height);
-    ctx.line_to(width, -2.0 / 4.0 * height);
-    ctx.move_to(0.0, -3.0 / 4.0 * height);
-    ctx.line_to(width, -3.0 / 4.0 * height);
+    for i in 0..5 {
+      let t = i as f64 / 4.0;
+      ctx.move_to(0.0, -t * height);
+      ctx.line_to(width, -t * height);
+    }
     ctx.set_source_rgb_u32(0x2b2d31);
     ctx.stroke()?;
 
@@ -51,8 +50,21 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.set_source_rgb_u32(0x232428);
     ctx.stroke()?;
 
-    ctx.restore()?;
-    Ok(())
+    ctx.restore()
+  };
+
+  let numbers = |range: Range, precision, units| -> cairo::Result<_> {
+    ctx.save()?;
+    ctx.translate(6.0 + width, 3.5);
+    ctx.set_source_rgb_u32(0xffffff);
+    for i in 0..5 {
+      let t = i as f64 / 4.0;
+      ctx.move_to(0.0, -t * height);
+      ctx.show_text(&format!("{:.*}", precision, range.lerp(t)))?;
+    }
+    ctx.set_source_rgb_u32(0x949ba4);
+    ctx.show_text(units)?;
+    ctx.restore()
   };
 
   // time
@@ -105,11 +117,12 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   {
     let temp = Range::of(&weather.hourly, |h| h.temp);
     let dew_point = Range::of(&weather.hourly, |h| h.dew_point);
-    let range = (temp & dew_point).round_tight(4.0);
+    let range = (temp & dew_point).round_n_rel(4.0).round();
     let map = |value| -0.0 - (height - 0.0) * range.unlerp(value);
 
     ctx.save()?;
-    background()?;
+    lines()?;
+    numbers(range, 0, "°C")?;
 
     ctx.move_to(0.0, -height - 7.5);
     #[rustfmt::skip]
@@ -128,20 +141,6 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0xffffff, format_args!("{:.0}", Num(dew_point.max))),
       (0x949ba4, format_args!("°C")),
     ])?;
-
-    ctx.set_source_rgb_u32(0xffffff);
-    ctx.move_to(6.0 + width, 3.5);
-    ctx.show_text(&format!("{:.0}", range.min))?;
-    ctx.move_to(6.0 + width, 3.5 - 1.0 / 4.0 * height);
-    ctx.show_text(&format!("{:.0}", range.lerp(1.0 / 4.0)))?;
-    ctx.move_to(6.0 + width, 3.5 - 2.0 / 4.0 * height);
-    ctx.show_text(&format!("{:.0}", range.lerp(2.0 / 4.0)))?;
-    ctx.move_to(6.0 + width, 3.5 - 3.0 / 4.0 * height);
-    ctx.show_text(&format!("{:.0}", range.lerp(3.0 / 4.0)))?;
-    ctx.move_to(6.0 + width, 3.5 - height);
-    ctx.show_text(&format!("{:.0}", range.max))?;
-    ctx.set_source_rgb_u32(0x949ba4);
-    ctx.show_text("°C")?;
 
     ctx.translate(0.5 * w, 0.0);
     ctx.set_line_cap(LineCap::Round);
@@ -167,11 +166,12 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   {
     let wind_speed = Range::of(&weather.hourly, |h| h.wind_speed);
     let wind_gust = Range::of(&weather.hourly, |h| h.wind_gust);
-    let range = (wind_speed & wind_gust & 0.0).round_simple(4.0);
+    let range = (wind_speed & wind_gust & 0.0).round_n_abs(4.0);
     let map = |value| -0.0 - (height - 0.0) * range.unlerp(value);
 
     ctx.save()?;
-    background()?;
+    lines()?;
+    numbers(range, 0, "m/s")?;
 
     ctx.move_to(0.0, -height - 7.5);
     #[rustfmt::skip]
@@ -186,20 +186,6 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0xffffff, format_args!("{:#.2}", Num(wind_gust.max))),
       (0x949ba4, format_args!("m/s")),
     ])?;
-
-    ctx.set_source_rgb_u32(0xffffff);
-    ctx.move_to(6.0 + width, 3.5);
-    ctx.show_text(&format!("{:.0}", range.min))?;
-    ctx.move_to(6.0 + width, 3.5 - 1.0 / 4.0 * height);
-    ctx.show_text(&format!("{:.0}", range.lerp(1.0 / 4.0)))?;
-    ctx.move_to(6.0 + width, 3.5 - 2.0 / 4.0 * height);
-    ctx.show_text(&format!("{:.0}", range.lerp(2.0 / 4.0)))?;
-    ctx.move_to(6.0 + width, 3.5 - 3.0 / 4.0 * height);
-    ctx.show_text(&format!("{:.0}", range.lerp(3.0 / 4.0)))?;
-    ctx.move_to(6.0 + width, 3.5 - height);
-    ctx.show_text(&format!("{:.0}", range.max))?;
-    ctx.set_source_rgb_u32(0x949ba4);
-    ctx.show_text("m/s")?;
 
     ctx.translate(0.5 * w, 0.0);
 
@@ -231,10 +217,14 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     let clouds = Range::of(&weather.hourly, |h| h.clouds as f64);
     let rain = Range::of(&weather.hourly, |h| h.rain.as_ref().map_or(0.0, |r| r.one_hour));
     let snow = Range::of(&weather.hourly, |h| h.snow.as_ref().map_or(0.0, |s| s.one_hour));
-    let range = (rain & snow & 0.0).round_simple(0.4);
+    let range = (rain & snow & 0.0).round_n_abs(0.4);
 
     ctx.save()?;
-    background()?;
+    lines()?;
+
+    if range.max > 0.0 {
+      numbers(range, 1, "mm/h")?;
+    }
 
     ctx.move_to(0.0, -height - 7.5);
     if rain.max > 0.0 {
@@ -259,22 +249,6 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0xffffff, format_args!("{}", clouds.max)),
       (0x949ba4, format_args!("%")),
     ])?;
-
-    if range.max > 0.0 {
-      ctx.set_source_rgb_u32(0xffffff);
-      ctx.move_to(6.0 + width, 3.5);
-      ctx.show_text(&format!("{:.1}", range.min))?;
-      ctx.move_to(6.0 + width, 3.5 - 1.0 / 4.0 * height);
-      ctx.show_text(&format!("{:.1}", range.lerp(1.0 / 4.0)))?;
-      ctx.move_to(6.0 + width, 3.5 - 2.0 / 4.0 * height);
-      ctx.show_text(&format!("{:.1}", range.lerp(2.0 / 4.0)))?;
-      ctx.move_to(6.0 + width, 3.5 - 3.0 / 4.0 * height);
-      ctx.show_text(&format!("{:.1}", range.lerp(3.0 / 4.0)))?;
-      ctx.move_to(6.0 + width, 3.5 - height);
-      ctx.show_text(&format!("{:.1}", range.max))?;
-      ctx.set_source_rgb_u32(0x949ba4);
-      ctx.show_text("mm/h")?;
-    }
 
     ctx.new_path();
     for (i, h) in weather.hourly.iter().enumerate() {
