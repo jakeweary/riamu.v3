@@ -7,21 +7,30 @@ pub struct Range {
 }
 
 impl Range {
-  pub fn new(min: f64, max: f64) -> Self {
-    Self { min, max }
-  }
-
   pub fn of<T>(items: &[T], map: impl Fn(&T) -> f64) -> Self {
     let (min, max) = (f64::INFINITY, f64::NEG_INFINITY);
     items.iter().fold(Self { min, max }, |acc, item| acc & map(item))
   }
 
-  pub fn normalize(self, value: f64) -> f64 {
-    (value - self.min) / (self.max - self.min)
+  pub fn round_simple(self, n: f64) -> Self {
+    let min = n * (self.min / n).floor();
+    let max = n * (self.max / n).ceil();
+    Self { min, max }
+  }
+
+  pub fn round_tight(self, n: f64) -> Self {
+    let range = n * ((self.max - self.min) / n).ceil();
+    let min = (0.5 + 0.5 * (self.min + self.max - range)).floor();
+    let max = (0.5 + 0.5 * (self.min + self.max + range)).floor();
+    Self { min, max }
   }
 
   pub fn lerp(self, t: f64) -> f64 {
     self.min + t * (self.max - self.min)
+  }
+
+  pub fn unlerp(self, x: f64) -> f64 {
+    (x - self.min) / (self.max - self.min)
   }
 }
 

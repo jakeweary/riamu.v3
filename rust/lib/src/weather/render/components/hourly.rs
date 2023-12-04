@@ -105,8 +105,8 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   {
     let temp = Range::of(&weather.hourly, |h| h.temp);
     let dew_point = Range::of(&weather.hourly, |h| h.dew_point);
-    let range = temp & dew_point;
-    let map = |value| -0.0 - (height - 0.0) * range.normalize(value);
+    let range = (temp & dew_point).round_tight(4.0);
+    let map = |value| -0.0 - (height - 0.0) * range.unlerp(value);
 
     ctx.save()?;
     background()?;
@@ -131,15 +131,15 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
 
     ctx.set_source_rgb_u32(0xffffff);
     ctx.move_to(6.0 + width, 3.5);
-    ctx.show_text(&format!("{:.0}", Num(range.min)))?;
+    ctx.show_text(&format!("{:.0}", range.min))?;
     ctx.move_to(6.0 + width, 3.5 - 1.0 / 4.0 * height);
-    ctx.show_text(&format!("{:.0}", Num(range.lerp(1.0 / 4.0))))?;
+    ctx.show_text(&format!("{:.0}", range.lerp(1.0 / 4.0)))?;
     ctx.move_to(6.0 + width, 3.5 - 2.0 / 4.0 * height);
-    ctx.show_text(&format!("{:.0}", Num(range.lerp(2.0 / 4.0))))?;
+    ctx.show_text(&format!("{:.0}", range.lerp(2.0 / 4.0)))?;
     ctx.move_to(6.0 + width, 3.5 - 3.0 / 4.0 * height);
-    ctx.show_text(&format!("{:.0}", Num(range.lerp(3.0 / 4.0))))?;
+    ctx.show_text(&format!("{:.0}", range.lerp(3.0 / 4.0)))?;
     ctx.move_to(6.0 + width, 3.5 - height);
-    ctx.show_text(&format!("{:.0}", Num(range.max)))?;
+    ctx.show_text(&format!("{:.0}", range.max))?;
     ctx.set_source_rgb_u32(0x949ba4);
     ctx.show_text("°C")?;
 
@@ -167,8 +167,8 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   {
     let wind_speed = Range::of(&weather.hourly, |h| h.wind_speed);
     let wind_gust = Range::of(&weather.hourly, |h| h.wind_gust);
-    let range = Range::new(0.0, 1.0) & wind_speed & wind_gust;
-    let map = |value| -0.0 - (height - 0.0) * range.normalize(value);
+    let range = (wind_speed & wind_gust & 0.0).round_simple(4.0);
+    let map = |value| -0.0 - (height - 0.0) * range.unlerp(value);
 
     ctx.save()?;
     background()?;
@@ -189,15 +189,15 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
 
     ctx.set_source_rgb_u32(0xffffff);
     ctx.move_to(6.0 + width, 3.5);
-    ctx.show_text(&format!("{:#.2}", Num(range.min)))?;
+    ctx.show_text(&format!("{:.0}", range.min))?;
     ctx.move_to(6.0 + width, 3.5 - 1.0 / 4.0 * height);
-    ctx.show_text(&format!("{:#.2}", Num(range.lerp(1.0 / 4.0))))?;
+    ctx.show_text(&format!("{:.0}", range.lerp(1.0 / 4.0)))?;
     ctx.move_to(6.0 + width, 3.5 - 2.0 / 4.0 * height);
-    ctx.show_text(&format!("{:#.2}", Num(range.lerp(2.0 / 4.0))))?;
+    ctx.show_text(&format!("{:.0}", range.lerp(2.0 / 4.0)))?;
     ctx.move_to(6.0 + width, 3.5 - 3.0 / 4.0 * height);
-    ctx.show_text(&format!("{:#.2}", Num(range.lerp(3.0 / 4.0))))?;
+    ctx.show_text(&format!("{:.0}", range.lerp(3.0 / 4.0)))?;
     ctx.move_to(6.0 + width, 3.5 - height);
-    ctx.show_text(&format!("{:#.2}", Num(range.max)))?;
+    ctx.show_text(&format!("{:.0}", range.max))?;
     ctx.set_source_rgb_u32(0x949ba4);
     ctx.show_text("m/s")?;
 
@@ -231,7 +231,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     let clouds = Range::of(&weather.hourly, |h| h.clouds as f64);
     let rain = Range::of(&weather.hourly, |h| h.rain.as_ref().map_or(0.0, |r| r.one_hour));
     let snow = Range::of(&weather.hourly, |h| h.snow.as_ref().map_or(0.0, |s| s.one_hour));
-    let range = Range::new(0.0, 1.0) & rain & snow;
+    let range = (rain & snow & 0.0).round_simple(0.4);
 
     ctx.save()?;
     background()?;
@@ -260,18 +260,18 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("%")),
     ])?;
 
-    if rain.max > 0.0 || snow.max > 0.0 {
+    if range.max > 0.0 {
       ctx.set_source_rgb_u32(0xffffff);
       ctx.move_to(6.0 + width, 3.5);
-      ctx.show_text(&format!("{:#.2}", Num(range.min)))?;
+      ctx.show_text(&format!("{:.1}", range.min))?;
       ctx.move_to(6.0 + width, 3.5 - 1.0 / 4.0 * height);
-      ctx.show_text(&format!("{:#.2}", Num(range.lerp(1.0 / 4.0))))?;
+      ctx.show_text(&format!("{:.1}", range.lerp(1.0 / 4.0)))?;
       ctx.move_to(6.0 + width, 3.5 - 2.0 / 4.0 * height);
-      ctx.show_text(&format!("{:#.2}", Num(range.lerp(2.0 / 4.0))))?;
+      ctx.show_text(&format!("{:.1}", range.lerp(2.0 / 4.0)))?;
       ctx.move_to(6.0 + width, 3.5 - 3.0 / 4.0 * height);
-      ctx.show_text(&format!("{:#.2}", Num(range.lerp(3.0 / 4.0))))?;
+      ctx.show_text(&format!("{:.1}", range.lerp(3.0 / 4.0)))?;
       ctx.move_to(6.0 + width, 3.5 - height);
-      ctx.show_text(&format!("{:#.2}", Num(range.max)))?;
+      ctx.show_text(&format!("{:.1}", range.max))?;
       ctx.set_source_rgb_u32(0x949ba4);
       ctx.show_text("mm/h")?;
     }
@@ -286,14 +286,14 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
 
     for (i, h) in weather.hourly.iter().enumerate() {
       let rain = h.rain.as_ref().map_or(0.0, |r| r.one_hour);
-      let rain = range.normalize(rain);
+      let rain = range.unlerp(rain);
       ctx.new_path();
       ctx.rectangle(0.5 + w * i as f64, -0.5, w - 1.0, -(height - 1.0) * rain);
       ctx.set_source_rgb_u32_and_alpha(discord::colors::TABLE[2].dark, h.pop);
       ctx.fill()?;
 
       let snow = h.snow.as_ref().map_or(0.0, |r| r.one_hour);
-      let snow = range.normalize(snow);
+      let snow = range.unlerp(snow);
       ctx.new_path();
       ctx.rectangle(0.5 + w * i as f64, -0.5, w - 1.0, -(height - 1.0) * snow);
       ctx.set_source_rgb_u32_and_alpha(discord::colors::TABLE[8].dark, h.pop);
