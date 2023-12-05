@@ -5,6 +5,7 @@ use cairo::*;
 use chrono::prelude::*;
 
 use crate::discord;
+use crate::weather::render::draw;
 
 use super::fmt::Num;
 use super::range::Range;
@@ -18,7 +19,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   let gap = 22.0;
 
   ctx.save()?;
-  ctx.translate(12.5, IMAGE_H as f64 - 10.0);
+  ctx.translate(12.5, IMAGE_H as f64 - 13.0);
 
   let font_size = 10.0;
   util::cairo::set_font_variations(ctx, "opsz=10,wdth=50")?;
@@ -67,51 +68,51 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.restore()
   };
 
-  // time
+  // time & uvi
   {
-    ctx.save()?;
-    ctx.translate(0.5 * w, 0.0);
+    let text0 = color_sub(0x949ba4, 0x2b2d31);
+    let text1 = 0xffffff;
 
+    let uvi_range = Range::of(&weather.hourly, |h| h.uvi);
+    let uvi_grad = LinearGradient::new(0.0, 0.0, width, 0.0);
     for (i, hour) in weather.hourly.iter().enumerate() {
-      let dt = util::datetime(weather.timezone_offset, hour.dt);
+      let t = (0.5 + i as f64) / weather.hourly.len() as f64;
+      let a = uvi_range.unlerp(hour.uvi);
+      uvi_grad.add_color_stop_rgba(t, 0.984, 0.749, 0.141, a);
+    }
+
+    draw::rounded_rect(ctx, w / 2.0, -3.5, width - w, 0.0, 6.5);
+
+    ctx.save()?;
+    ctx.set_line_width(2.0);
+    ctx.set_source(&uvi_grad)?;
+    ctx.stroke_preserve()?;
+    ctx.clip_preserve();
+    ctx.set_source_rgb_u32(0x2b2d31);
+    ctx.paint()?;
+    ctx.set_source(&uvi_grad)?;
+    ctx.paint_with_alpha(0.2)?;
+    ctx.restore()?;
+
+    ctx.save()?;
+    ctx.clip();
+    ctx.set_operator(Operator::Add);
+    ctx.translate(0.5 * w, 0.0);
+    let h0 = weather.hourly[0].dt;
+    for i in -1..=weather.hourly.len() as i64 {
+      let dt = util::datetime(weather.timezone_offset, h0 + i * 3600);
       if dt.hour() % 3 == 0 {
-        let color = if dt.hour() == 0 { 0xffffff } else { 0x949ba4 };
         let text = dt.format("%H:%M").to_string();
         let ext = ctx.text_extents(&text)?;
+        ctx.set_source_rgb_u32(if dt.hour() == 0 { text1 } else { text0 });
         ctx.move_to(w * i as f64 - ext.x_advance() / 2.0, 0.0);
-        ctx.set_source_rgb_u32(color);
         ctx.show_text(&text)?;
       }
     }
-
     ctx.restore()?;
-    ctx.translate(0.0, -7.5 - font_size);
-  }
 
-  // TODO: not finished
-  //
-  // // sun
-  // {
-  //   let px = w / 3600.0; // seconds to pixels
-  //   let zero = weather.hourly[0].dt;
-  //
-  //   ctx.save()?;
-  //   ctx.translate(0.5 * w, 0.0);
-  //   ctx.new_path();
-  //
-  //   for day in &weather.daily {
-  //     ctx.move_to(px * (day.sunrise - zero) as f64, 0.0);
-  //     ctx.line_to(px * (day.sunset - zero) as f64, 0.0);
-  //   }
-  //
-  //   ctx.set_line_width(1.0);
-  //   ctx.set_line_cap(LineCap::Round);
-  //   ctx.set_source_rgb_u32(discord::colors::TABLE[5].light);
-  //   ctx.stroke()?;
-  //   ctx.restore()?;
-  //
-  //   ctx.translate(0.0, -4.0);
-  // }
+    ctx.translate(0.0, -10.5 - font_size);
+  }
 
   // temps
   {
@@ -281,6 +282,12 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   ctx.restore()?;
 
   Ok(())
+}
+
+fn color_sub(a: u32, b: u32) -> u32 {
+  let [b0, g0, r0, a0] = a.to_le_bytes();
+  let [b1, g1, r1, a1] = b.to_le_bytes();
+  u32::from_le_bytes([b0 - b1, g0 - g1, r0 - r1, a0 - a1])
 }
 
 fn legend(ctx: &Context, color: u32, pairs: &[(u32, Arguments<'_>)]) -> cairo::Result<()> {

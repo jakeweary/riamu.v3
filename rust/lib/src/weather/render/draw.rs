@@ -21,13 +21,16 @@ pub fn arrow(ctx: &Context) {
   ctx.close_path();
 }
 
-pub fn rounded_rect(ctx: &Context, w: f64, h: f64, r: f64) {
+pub fn rounded_rect(ctx: &Context, x: f64, y: f64, w: f64, h: f64, r: f64) {
+  let m = ctx.matrix();
+  ctx.translate(x, y);
   ctx.new_sub_path();
   ctx.arc(w, h, r, 0.0, 0.5 * π);
   ctx.arc(0.0, h, r, 0.5 * π, π);
   ctx.arc(0.0, 0.0, r, π, 1.5 * π);
   ctx.arc(w, 0.0, r, 1.5 * π, 0.0);
   ctx.close_path();
+  ctx.set_matrix(m);
 }
 
 // http://scaledinnovation.com/analytics/splines/aboutSplines.html
