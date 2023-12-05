@@ -58,7 +58,6 @@ pub fn week(ctx: &Context, weather: &api::Root) -> Result<()> {
     ctx.save()?;
     ctx.scale(6.0, 6.0);
     ctx.rotate((day.wind_deg as f64).to_radians());
-    ctx.new_path();
     draw::arrow(ctx);
     ctx.set_source_rgb_u32(0xffffff);
     ctx.fill()?;

@@ -22,7 +22,6 @@ pub fn hourly(ctx: &Context, weather: &api::Root) -> Result<()> {
   let background = |h: f64| -> cairo::Result<_> {
     ctx.save()?;
 
-    ctx.new_path();
     for i in 0..weather.hourly.len() {
       let x = (0.5 + i as f64) * w;
       ctx.move_to(x, 0.0);
@@ -31,7 +30,6 @@ pub fn hourly(ctx: &Context, weather: &api::Root) -> Result<()> {
     ctx.set_source_rgb_u32(0x2b2d31);
     ctx.stroke()?;
 
-    ctx.new_path();
     ctx.move_to(0.0, 0.0);
     ctx.line_to(width, 0.0);
     ctx.move_to(0.0, -h);
@@ -114,13 +112,11 @@ pub fn hourly(ctx: &Context, weather: &api::Root) -> Result<()> {
     ctx.set_line_cap(LineCap::Round);
     ctx.set_line_width(1.0);
 
-    ctx.new_path();
     draw::spline(ctx, w, &weather.hourly, |h| map(h.dew_point));
     ctx.set_dash(&[1.0, 3.0], 0.0);
     ctx.set_source_rgb_u32(discord::colors::TABLE[2].light);
     ctx.stroke()?;
 
-    ctx.new_path();
     draw::spline(ctx, w, &weather.hourly, |h| map(h.temp));
     ctx.set_dash(&[], 0.0);
     ctx.set_source_rgb_u32(discord::colors::TABLE[8].light);
@@ -169,14 +165,12 @@ pub fn hourly(ctx: &Context, weather: &api::Root) -> Result<()> {
 
     ctx.translate(0.5 * w, 0.0);
 
-    ctx.new_path();
     for (i, hour) in weather.hourly.iter().enumerate() {
       draw::circle(ctx, w * i as f64, map(hour.wind_gust), 1.5);
     }
     ctx.set_source_rgb_u32(discord::colors::TABLE[8].light);
     ctx.fill()?;
 
-    ctx.new_path();
     for (i, hour) in weather.hourly.iter().enumerate() {
       ctx.save()?;
       ctx.translate(w * i as f64, map(hour.wind_speed));
@@ -241,7 +235,6 @@ pub fn hourly(ctx: &Context, weather: &api::Root) -> Result<()> {
       ctx.show_text(&format!("{:#.2}", Num(range.min)))?;
     }
 
-    ctx.new_path();
     for (i, h) in weather.hourly.iter().enumerate() {
       let clouds = h.clouds as f64 / 100.0;
       ctx.rectangle(0.5 + w * i as f64, -0.5, w - 1.0, -(height - 1.0) * clouds);
@@ -252,7 +245,6 @@ pub fn hourly(ctx: &Context, weather: &api::Root) -> Result<()> {
     for (i, h) in weather.hourly.iter().enumerate() {
       let rain = h.rain.as_ref().map_or(0.0, |r| r.one_hour);
       let rain = range.normalize(rain);
-      ctx.new_path();
       ctx.rectangle(0.5 + w * i as f64, -0.5, w - 1.0, -(height - 1.0) * rain);
       ctx.set_source_rgb_u32_and_alpha(discord::colors::TABLE[2].dark, h.pop);
       ctx.fill()?;

@@ -48,16 +48,10 @@ pub fn daily(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.show_text(&text)?;
     ctx.translate(0.0, font_size);
 
-    ctx.translate(0.0, 13.5);
-    ctx.save()?;
-    ctx.scale1(6.0);
-    ctx.rotate((day.wind_deg as f64).to_radians());
-    ctx.new_path();
-    draw::arrow(ctx);
+    draw::arrow(ctx, 0.0, 13.5, 6.0, (day.wind_deg as f64).to_radians());
     ctx.set_source_rgb_u32(0xffffff);
     ctx.fill()?;
-    ctx.restore()?;
-    ctx.translate(0.0, 11.5);
+    ctx.translate(0.0, 25.0);
 
     let text = format!("{}", Num(day.wind_speed));
     ctx.move_to(0.0, font_size);

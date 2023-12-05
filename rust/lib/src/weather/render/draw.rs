@@ -11,16 +11,6 @@ pub fn circle(ctx: &Context, x: f64, y: f64, r: f64) {
   ctx.close_path();
 }
 
-pub fn arrow(ctx: &Context) {
-  let (sin, cos) = (τ / 12.0).sin_cos();
-  ctx.new_sub_path();
-  ctx.line_to(0.0, 0.25 - cos);
-  ctx.line_to(sin, -cos);
-  ctx.line_to(0.0, 1.0);
-  ctx.line_to(-sin, -cos);
-  ctx.close_path();
-}
-
 pub fn rounded_rect(ctx: &Context, x: f64, y: f64, w: f64, h: f64, r: f64) {
   let m = ctx.matrix();
   ctx.translate(x, y);
@@ -29,6 +19,21 @@ pub fn rounded_rect(ctx: &Context, x: f64, y: f64, w: f64, h: f64, r: f64) {
   ctx.arc(0.0, h, r, 0.5 * π, π);
   ctx.arc(0.0, 0.0, r, π, 1.5 * π);
   ctx.arc(w, 0.0, r, 1.5 * π, 0.0);
+  ctx.close_path();
+  ctx.set_matrix(m);
+}
+
+pub fn arrow(ctx: &Context, x: f64, y: f64, scale: f64, angle: f64) {
+  let (sin, cos) = (τ / 12.0).sin_cos();
+  let m = ctx.matrix();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.rotate(angle);
+  ctx.new_sub_path();
+  ctx.line_to(0.0, 0.25 - cos);
+  ctx.line_to(sin, -cos);
+  ctx.line_to(0.0, 1.0);
+  ctx.line_to(-sin, -cos);
   ctx.close_path();
   ctx.set_matrix(m);
 }
