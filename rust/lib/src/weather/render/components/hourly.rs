@@ -79,22 +79,21 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       uvi_grad.add_color_stop_rgba(t, 0.984, 0.749, 0.141, a);
     }
 
-    draw::rounded_rect(ctx, w / 2.0, -3.5, width - w, 0.0, 6.5);
+    let r = 6.5;
+    draw::rounded_rect(ctx, w / 2.0, -3.5, width - w, 0.0, r);
 
     ctx.save()?;
     ctx.set_line_width(2.0);
     ctx.set_source(&uvi_grad)?;
     ctx.stroke_preserve()?;
-    ctx.clip_preserve();
+    ctx.clip();
     ctx.set_source_rgb_u32(0x2b2d31);
     ctx.paint()?;
     ctx.set_source(&uvi_grad)?;
     ctx.paint_with_alpha(0.2)?;
     ctx.restore()?;
 
-    ctx.save()?;
-    ctx.clip();
-    ctx.set_operator(Operator::Add);
+    ctx.push_group();
     ctx.translate(0.5 * w, 0.0);
     let h0 = weather.hourly[0].dt;
     for i in -1..=weather.hourly.len() as i64 {
@@ -107,6 +106,30 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
         ctx.show_text(&text)?;
       }
     }
+    ctx.pop_group_to_source()?;
+
+    let mask = {
+      let rg = RadialGradient::new(0.0, 0.0, 0.0, 0.0, 0.0, r);
+      rg.add_color_stop_rgba(0.0, 0.0, 0.0, 0.0, 1.0);
+      rg.add_color_stop_rgba(4.0 / r, 0.0, 0.0, 0.0, 1.0);
+      rg.add_color_stop_rgba(1.0, 0.0, 0.0, 0.0, 0.0);
+
+      ctx.push_group_with_content(Content::Alpha);
+      ctx.translate(w / 2.0, -3.5);
+      ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0);
+      ctx.rectangle(0.0, -r, width - w, 2.0 * r);
+      ctx.fill()?;
+      ctx.set_source(&rg)?;
+      ctx.paint()?;
+      ctx.translate(width - w, 0.0);
+      ctx.set_source(&rg)?;
+      ctx.paint()?;
+      ctx.pop_group()?
+    };
+
+    ctx.save()?;
+    ctx.set_operator(Operator::Add);
+    ctx.mask(mask)?;
     ctx.restore()?;
 
     ctx.translate(0.0, -10.5 - font_size);
