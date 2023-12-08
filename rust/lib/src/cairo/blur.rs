@@ -23,8 +23,8 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
     move |x: i32| unsafe { *lut.get_unchecked(x.unsigned_abs() as usize) }
   };
 
-  let srgb_u8_eotf = {
-    let lut: [_; 0x100] = array::from_fn(|i| srgb::u8::eotf(i as u8));
+  let srgb_eotf = {
+    let lut: [_; 0x100] = array::from_fn(|i| srgb::eotf(i as u8));
     move |x: u8| unsafe { *lut.get_unchecked(x as usize) }
   };
 
@@ -48,17 +48,17 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
         let mut sum = 0.0;
         for (&src, dx) in iter::zip(src, x_min - x..) {
           let g = gauss(dx);
-          acc[0] += g * srgb_u8_eotf(src[0]);
-          acc[1] += g * srgb_u8_eotf(src[1]);
-          acc[2] += g * srgb_u8_eotf(src[2]);
-          acc[3] += g * srgb_u8_eotf(src[3]);
+          acc[0] += g * srgb_eotf(src[0]);
+          acc[1] += g * srgb_eotf(src[1]);
+          acc[2] += g * srgb_eotf(src[2]);
+          acc[3] += g * srgb_eotf(src[3]);
           sum += g;
         }
 
-        let a = srgb::u8::oetf(acc[0] / sum);
-        let b = srgb::u8::oetf(acc[1] / sum);
-        let c = srgb::u8::oetf(acc[2] / sum);
-        let d = srgb::u8::oetf(acc[3] / sum);
+        let a = srgb::oetf(acc[0] / sum);
+        let b = srgb::oetf(acc[1] / sum);
+        let c = srgb::oetf(acc[2] / sum);
+        let d = srgb::oetf(acc[3] / sum);
         *dst = [a, b, c, d];
       }
     }
@@ -74,31 +74,13 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
 }
 
 mod srgb {
-  pub mod f32 {
-    #![allow(clippy::excessive_precision)]
+  use crate::srgb::f32;
 
-    pub fn oetf(x: f32) -> f32 {
-      match x {
-        x if x > 0.00313066844250063 => 1.055 * x.powf(1.0 / 2.4) - 0.055,
-        x => 12.92 * x,
-      }
-    }
-
-    pub fn eotf(x: f32) -> f32 {
-      match x {
-        x if x > 0.0404482362771082 => ((x + 0.055) / 1.055).powf(2.4),
-        x => x / 12.92,
-      }
-    }
+  pub fn eotf(x: u8) -> f32 {
+    f32::eotf(x as f32 / 0xff as f32)
   }
 
-  pub mod u8 {
-    pub fn eotf(x: u8) -> f32 {
-      super::f32::eotf(x as f32 / 0xff as f32)
-    }
-
-    pub fn oetf(x: f32) -> u8 {
-      (super::f32::oetf(x) * 0x100 as f32) as u8
-    }
+  pub fn oetf(x: f32) -> u8 {
+    (f32::oetf(x) * 0x100 as f32) as u8
   }
 }

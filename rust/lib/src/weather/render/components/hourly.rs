@@ -5,6 +5,7 @@ use cairo::*;
 use chrono::prelude::*;
 
 use crate::discord;
+use crate::srgb::Srgb;
 use crate::weather::render::draw;
 
 use super::fmt::Num;
@@ -76,7 +77,8 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     for (i, hour) in weather.hourly.iter().enumerate() {
       let t = (0.5 + i as f64) / weather.hourly.len() as f64;
       let a = uvi_range.unlerp(hour.uvi);
-      uvi_grad.add_color_stop_rgba(t, 0.984, 0.749, 0.141, a);
+      let [r, g, b] = Srgb::from(Srgb::<_, 3>::from(0xfbbf24)).into();
+      uvi_grad.add_color_stop_rgba(t, r, g, b, a);
     }
 
     let r = 6.5;

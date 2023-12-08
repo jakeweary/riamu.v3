@@ -5,6 +5,7 @@ pub mod gcra;
 pub mod html;
 pub mod network;
 pub mod random;
+pub mod srgb;
 pub mod task;
 pub mod cairo {
   pub mod blur;
