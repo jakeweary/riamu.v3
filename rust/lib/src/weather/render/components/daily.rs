@@ -95,8 +95,8 @@ pub fn daily(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.fill()?;
     ctx.translate(0.0, 25.0);
 
-    show_number(color0, format!("{:.0}", day.wind_gust))?;
-    show_number(color1, format!("{:.0}", day.wind_speed))?;
+    show_number(color0, format!("{:.0}", Num(day.wind_gust)))?;
+    show_number(color1, format!("{:.0}", Num(day.wind_speed)))?;
     show_indicator(wind, day.wind_speed, day.wind_gust)?;
 
     ctx.restore()?;

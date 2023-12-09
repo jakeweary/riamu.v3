@@ -60,7 +60,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     for i in 0..5 {
       let t = i as f64 / 4.0;
       ctx.move_to(0.0, -t * height);
-      ctx.show_text(&format!("{:.*}", precision, range.lerp(t)))?;
+      ctx.show_text(&format!("{:.*}", precision, Num(range.lerp(t))))?;
     }
     ctx.set_source_rgb_u32(0x949ba4);
     ctx.show_text(units)?;
