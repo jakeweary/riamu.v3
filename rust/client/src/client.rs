@@ -245,24 +245,7 @@ impl Client {
     self.handle_command(ctx).await
   }
 
-  async fn on_message(&self, ctx: serenity::Context, msg: serenity::Message) -> Result<()> {
-    if msg.mentions_me(&ctx).await? {
-      let key = ("ping reply", msg.channel_id);
-      let rate = db::ratelimits::Quota(1.0) / db::ratelimits::seconds(30);
-      let info = db::ratelimits::update(&self.db, key, rate).await?;
-
-      if info.result.is_ok() {
-        let err = match db::replies::random_reply(&self.db).await? {
-          Some(reply) => msg.reply(&ctx, reply).await.is_err(),
-          None => msg.react(&ctx, '😳').await.is_err(),
-        };
-
-        if err {
-          tracing::warn!("can't reply to the ping");
-        }
-      }
-    }
-
+  async fn on_message(&self, _ctx: serenity::Context, _msg: serenity::Message) -> Result<()> {
     Ok(())
   }
 
