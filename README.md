@@ -1,8 +1,6 @@
 # Riamu v3 – autism unleashed
 
-Third iteration of my retarded Discord bot, this time with an unhealthy level of overengineering.
-
-This project is nothing more than a testbed for my autistic programming ideas.
+Third iteration of my Discord bot, this time with an unhealthy level of overengineering.
 
 ## Instructions
 
