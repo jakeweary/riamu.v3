@@ -3,7 +3,7 @@ use std::fmt::Display;
 use std::slice;
 
 use cairo::{Filter, FontSlant, FontWeight, Format, ImageSurface, SurfacePattern};
-use chrono::{DateTime, Days, FixedOffset, Local, Offset, TimeZone, Timelike, Utc};
+use chrono::{DateTime, Days, FixedOffset, Offset, TimeZone, Timelike, Utc};
 use lib::cairo::{ext::*, util::resize};
 use lib::task;
 use serenity::all::*;
@@ -80,7 +80,7 @@ where
   // ---
 
   {
-    let img = status_history_data(dt, statuses)?;
+    let img = status_history_data(dt.clone(), statuses)?;
     let img = resize(&img, Filter::Good, SCALE * CELL_W * 24, 30)?;
     let pat = SurfacePattern::create(&img);
     pat.set_filter(Filter::Nearest);
@@ -101,9 +101,9 @@ where
       0 => "Today".into(),
       1 => "Yesterday".into(),
       d => {
-        let date = Local::now().checked_sub_days(Days::new(d)).unwrap();
-        let day = date.format("%e").to_string().replace(' ', "\u{2007}");
-        let mon = date.format("%b");
+        let dt = dt.clone().checked_sub_days(Days::new(d)).unwrap();
+        let day = dt.format("%e").to_string().replace(' ', "\u{2007}");
+        let mon = dt.format("%b");
         format!("{day} {mon}")
       }
     };
