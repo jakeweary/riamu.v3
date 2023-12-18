@@ -29,6 +29,7 @@ pub fn beaufort_scale(wind_speed_ms: f64) -> &'static str {
     "violent storm",
     "hurricane",
   ];
+
   let b = (wind_speed_ms / 0.836).powf(2.0 / 3.0);
   TABLE[b.round() as usize]
 }

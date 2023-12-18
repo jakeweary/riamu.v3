@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use futures::StreamExt;
 use lib::fmt::num::Format;
-use lib::random::XorShift64;
+use lib::random::xorshift64::XorShift64;
 use rand::prelude::*;
 use serenity::all::*;
 

@@ -1,13 +1,13 @@
 use std::sync::OnceLock;
 
 use ego_tree::NodeRef;
+use lib::fmt::plural::Plural;
 use regex_lite::Regex;
 use scraper::{CaseSensitivity::*, Html, Node};
 use serde::Deserialize;
 use serenity::all::*;
 
 use crate::client::{err, Context, Result};
-use lib::fmt::plural::Plural;
 
 #[macros::command(description = "Repost something from 2ch")]
 pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {

@@ -1,6 +1,6 @@
 use cairo::*;
 
-use crate::srgb::Srgb;
+use crate::srgb::sRGB;
 
 use super::fmt::Num;
 use super::range::Range;
@@ -8,8 +8,7 @@ use super::Result;
 use super::*;
 
 pub fn daily(ctx: &Context, weather: &api::Onecall) -> Result<()> {
-  let width = 8.0 * 28.0;
-  let day_w = width / weather.daily.len() as f64;
+  let day_width = 28.0;
 
   let temp_min = Range::of(&weather.daily, |d| d.temp.min);
   let temp_max = Range::of(&weather.daily, |d| d.temp.max);
@@ -32,9 +31,9 @@ pub fn daily(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   let indicator_h = 3.0 - 2.0 * font_size;
   let indicator_g = {
     let lg = LinearGradient::new(0.0, 0.0, 0.0, indicator_h);
-    let [r, g, b] = Srgb::from(Srgb::<_, 3>::from(color1)).into();
+    let [r, g, b] = sRGB::from(sRGB::<_, 3>::from(color1)).into();
     lg.add_color_stop_rgb(0.0, r, g, b);
-    let [r, g, b] = Srgb::from(Srgb::<_, 3>::from(color0)).into();
+    let [r, g, b] = sRGB::from(sRGB::<_, 3>::from(color0)).into();
     lg.add_color_stop_rgb(1.0, r, g, b);
     lg
   };
@@ -80,11 +79,11 @@ pub fn daily(ctx: &Context, weather: &api::Onecall) -> Result<()> {
 
     let (svg, size) = icons::openweather(&day.weather[0].icon)?;
     ctx.save()?;
-    ctx.scale1(28.0 / size.height);
+    ctx.scale1(day_width / size.width);
     ctx.translate(-size.width / 2.0, 0.0);
     svg.render_cairo(ctx)?;
     ctx.restore()?;
-    ctx.translate(0.0, 28.0 + 1.0);
+    ctx.translate(0.0, day_width + 1.0);
 
     show_number(color0, format!("{:.0}", Num(day.temp.max)))?;
     show_number(color1, format!("{:.0}", Num(day.temp.min)))?;
@@ -100,7 +99,7 @@ pub fn daily(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     show_indicator(wind, day.wind_speed, day.wind_gust)?;
 
     ctx.restore()?;
-    ctx.translate(day_w, 0.0);
+    ctx.translate(day_width, 0.0);
   }
 
   ctx.restore()?;

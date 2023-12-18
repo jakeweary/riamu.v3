@@ -120,7 +120,6 @@ impl State {
     self.tat = t_arrived + new.period.min(scaled as u64);
   }
 
-  #[inline(never)]
   fn update_at(&mut self, rate: Rate, n: f64, t_arrived: u64, forced: bool) -> Info {
     let result = 'r: {
       let inc = rate.as_increment();

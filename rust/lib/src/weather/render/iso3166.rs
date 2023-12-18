@@ -242,7 +242,7 @@ pub const TABLE: &[(&str, &str)] = &[
   ("VE", "Venezuela"),
   ("VG", "Virgin Islands (British)"),
   ("VI", "Virgin Islands (U.S.)"),
-  ("VN", "Viet Nam"),
+  ("VN", "Vietnam"),
   ("VU", "Vanuatu"),
   ("WF", "Wallis and Futuna"),
   ("WS", "Samoa"),
