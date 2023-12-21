@@ -4,8 +4,8 @@ use std::fmt::Arguments;
 use cairo::*;
 use chrono::prelude::*;
 
+use crate::color::srgb::sRGB;
 use crate::discord;
-use crate::srgb::sRGB;
 use crate::weather::render::draw;
 
 use super::fmt::Num;
@@ -77,7 +77,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     for (i, hour) in weather.hourly.iter().enumerate() {
       let t = (0.5 + i as f64) / weather.hourly.len() as f64;
       let a = uvi_range.unlerp(hour.uvi);
-      let [r, g, b] = sRGB::from(sRGB::<_, 3>::from(0xfbbf24)).into();
+      let [b, g, r] = sRGB::from(sRGB::<_, 3>::from(0xfbbf24)).into();
       uvi_grad.add_color_stop_rgba(t, r, g, b, a);
     }
 

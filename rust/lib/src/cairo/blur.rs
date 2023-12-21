@@ -74,7 +74,7 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
 }
 
 mod srgb {
-  use crate::srgb::f32;
+  use crate::color::srgb::f32;
 
   pub fn eotf(x: u8) -> f32 {
     f32::eotf(x as f32 / 0xff as f32)

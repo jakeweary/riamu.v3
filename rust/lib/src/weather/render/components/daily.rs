@@ -1,6 +1,6 @@
 use cairo::*;
 
-use crate::srgb::sRGB;
+use crate::color::srgb::sRGB;
 
 use super::fmt::Num;
 use super::range::Range;
@@ -31,9 +31,9 @@ pub fn daily(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   let indicator_h = 3.0 - 2.0 * font_size;
   let indicator_g = {
     let lg = LinearGradient::new(0.0, 0.0, 0.0, indicator_h);
-    let [r, g, b] = sRGB::from(sRGB::<_, 3>::from(color1)).into();
+    let [b, g, r] = sRGB::from(sRGB::<_, 3>::from(color1)).into();
     lg.add_color_stop_rgb(0.0, r, g, b);
-    let [r, g, b] = sRGB::from(sRGB::<_, 3>::from(color0)).into();
+    let [b, g, r] = sRGB::from(sRGB::<_, 3>::from(color0)).into();
     lg.add_color_stop_rgb(1.0, r, g, b);
     lg
   };

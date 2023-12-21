@@ -5,12 +5,14 @@ pub mod gcra;
 pub mod html;
 pub mod network;
 pub mod random;
-pub mod srgb;
 pub mod task;
 pub mod cairo {
   pub mod blur;
   pub mod ext;
   pub mod util;
+}
+pub mod color {
+  pub mod srgb;
 }
 pub mod hash {
   pub mod splitmix64;
