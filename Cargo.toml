@@ -30,7 +30,7 @@ reqwest = { version = "*", default-features = false }
 scraper = { version = "*", default-features = false }
 serde = "*"
 serde_json = "*"
-serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next", default-features = false }
+serenity = { version = "*", default-features = false }
 sqlx = { version = "*", default-features = false }
 tempfile = "*"
 thiserror = "*"
