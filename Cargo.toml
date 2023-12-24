@@ -3,6 +3,12 @@ default-members = ["rust/client"]
 members = ["rust/*"]
 resolver = "2"
 
+[workspace.lints.rust]
+rust_2018_idioms = "deny"
+uncommon_codepoints = "allow"
+confusable_idents = "allow"
+mixed_script_confusables = "allow"
+
 [workspace.dependencies]
 c = { path = "rust/c" }
 lib = { path = "rust/lib" }
