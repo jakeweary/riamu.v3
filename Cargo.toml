@@ -3,6 +3,10 @@ default-members = ["rust/client"]
 members = ["rust/*"]
 resolver = "2"
 
+[workspace.package]
+version = "3.0.0-alpha"
+edition = "2021"
+
 [workspace.lints.rust]
 rust_2018_idioms = "deny"
 uncommon_codepoints = "allow"

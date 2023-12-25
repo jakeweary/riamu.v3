@@ -198,7 +198,7 @@ checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
 
 [[package]]
 name = "c"
-version = "0.1.0"
+version = "3.0.0-alpha"
 dependencies = [
  "bindgen",
  "cairo-rs",
@@ -1313,7 +1313,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "lib"
-version = "0.1.0"
+version = "3.0.0-alpha"
 dependencies = [
  "c",
  "cairo-rs",
@@ -1391,7 +1391,7 @@ checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
 
 [[package]]
 name = "macros"
-version = "0.1.0"
+version = "3.0.0-alpha"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -2073,7 +2073,7 @@ dependencies = [
 
 [[package]]
 name = "python"
-version = "0.1.0"
+version = "3.0.0-alpha"
 dependencies = [
  "itertools 0.12.0",
  "lib",
@@ -2364,7 +2364,7 @@ dependencies = [
 
 [[package]]
 name = "sandbox"
-version = "0.1.0"
+version = "3.0.0-alpha"
 dependencies = [
  "c",
  "cairo-rs",
