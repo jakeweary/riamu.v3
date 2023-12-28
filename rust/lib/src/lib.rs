@@ -13,6 +13,7 @@ pub mod cairo {
 }
 pub mod color {
   pub mod convert;
+  pub mod oklab;
   pub mod srgb;
 }
 pub mod hash {
