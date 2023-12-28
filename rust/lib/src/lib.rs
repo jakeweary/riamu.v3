@@ -12,6 +12,7 @@ pub mod cairo {
   pub mod util;
 }
 pub mod color {
+  pub mod convert;
   pub mod srgb;
 }
 pub mod hash {

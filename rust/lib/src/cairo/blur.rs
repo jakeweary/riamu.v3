@@ -74,13 +74,13 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
 }
 
 mod srgb {
-  use crate::color::srgb::f32;
+  use crate::color::{convert, srgb};
 
   pub fn eotf(x: u8) -> f32 {
-    f32::eotf(x as f32 / 0xff as f32)
+    srgb::transfer_fns::f32::eotf(convert::unorm8::f32(x))
   }
 
   pub fn oetf(x: f32) -> u8 {
-    (f32::oetf(x) * 0x100 as f32) as u8
+    srgb::float_to_srgb8::v2(x)
   }
 }
