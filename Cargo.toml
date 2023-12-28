@@ -13,6 +13,10 @@ uncommon_codepoints = "allow"
 confusable_idents = "allow"
 mixed_script_confusables = "allow"
 
+[workspace.lints.clippy]
+excessive_precision = "allow"
+manual_range_contains = "allow"
+
 [workspace.dependencies]
 c = { path = "rust/c" }
 lib = { path = "rust/lib" }

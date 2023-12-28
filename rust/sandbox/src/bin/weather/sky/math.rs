@@ -4,7 +4,7 @@ use glam::Vec3;
 pub fn solve_quadratic(a: f32, b: f32, c: f32) -> Option<(f32, f32)> {
   let d = b.mul_add(b, -4.0 * a * c);
   let q = -0.5 * (d.sqrt().copysign(b) + b);
-  (d >= 0.0).then(|| (q / a, c / q))
+  (d >= 0.0).then_some((q / a, c / q))
 }
 
 pub fn ray_sphere_intersect(ro: Vec3, rd: Vec3, radius: f32) -> Option<(f32, f32)> {
