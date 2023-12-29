@@ -75,6 +75,11 @@ impl LruFileCache {
       if let (EventMask::OPEN, Some(name)) = (event.mask, event.name) {
         tracing::trace!(?name, "file open event");
 
+        // NOTE: apparently similar api exists in std
+        // but for some reason they put it under `std::fs::File::set_times`
+        // instead of `std::fs::set_times` which makes it unusable
+        // for this use case (`File::open` triggers an fs event and
+        // we're literally in the loop that listens to these events)
         let path = self.working_dir.join(&name);
         let atime = FileTime::now();
         filetime::set_file_atime(&path, atime)?;
