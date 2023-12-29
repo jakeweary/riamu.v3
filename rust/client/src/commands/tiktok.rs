@@ -51,7 +51,7 @@ pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {
 
   if fsize > ctx.filesize_limit().await? {
     tracing::debug!("caching…");
-    let url = ctx.client.cache.store_file(&fpath, Name::Keep).await?.unwrap();
+    let url = ctx.client.cache.store_file(fpath, Name::Keep).await?.unwrap();
 
     let content = format!("{} \u{205D} [mp4]({}) {}B", content, url, fsize.iec());
     let edit = EditInteractionResponse::new()

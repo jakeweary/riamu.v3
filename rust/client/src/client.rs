@@ -57,8 +57,8 @@ impl Client {
       let base_url = env.cache_base_url.clone();
       let working_dir = env.cache_working_dir.clone();
       let limit_bytes = env.cache_limit_GiB << 30;
-      let cache = LruFileCache::new(base_url, working_dir, limit_bytes).await?;
-      Arc::new(cache)
+      let cache = LruFileCache::new(base_url, working_dir, limit_bytes);
+      Arc::new(cache.await?)
     };
 
     let client = Self {

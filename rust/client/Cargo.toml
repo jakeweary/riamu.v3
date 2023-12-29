@@ -21,6 +21,7 @@ lru.workspace = true
 macros.workspace = true
 pango = { workspace = true, features = ["v1_42"] }
 pangocairo.workspace = true
+parking_lot = "*"
 procfs.workspace = true
 pyo3.workspace = true
 python.workspace = true

@@ -1,24 +1,23 @@
 use std::borrow::Cow;
-use std::collections::hash_map::DefaultHasher;
 use std::ffi::OsString;
-use std::hash::Hasher;
+use std::hash::{DefaultHasher, Hasher};
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::{fs, io};
 
 use filetime::FileTime;
-use futures::StreamExt;
 use inotify::{EventMask, Inotify, WatchMask};
 use lib::fmt::num::Format;
 use lib::task;
 use lru::LruCache;
-use tokio::sync::Mutex;
+use parking_lot::Mutex;
 use url::Url;
 
 #[derive(Debug)]
-pub enum Name<'a> {
+pub enum Name {
   Keep,
-  Set(&'a str),
+  Set(String),
 }
 
 #[derive(Debug)]
@@ -30,82 +29,92 @@ pub struct LruFileCache {
 }
 
 #[derive(Debug)]
+struct State {
+  bytes_stored: u64,
+  files: LruCache<OsString, File>,
+}
+
+#[derive(Debug)]
 struct File {
   size: u64,
 }
 
 impl LruFileCache {
   pub async fn new(base_url: Url, working_dir: PathBuf, bytes_limit: u64) -> io::Result<Self> {
-    tracing::debug!("initializing cache…");
+    task::spawn_blocking(move || Self::new_blocking(base_url, working_dir, bytes_limit)).await?
+  }
 
-    let state = {
-      let path = working_dir.clone();
-      task::spawn_blocking(move || State::new(path)).await??
-    };
+  pub async fn watch(self: &Arc<Self>) -> io::Result<()> {
+    let cache = self.to_owned();
+    task::spawn_blocking(move || cache.watch_blocking()).await?
+  }
 
+  pub async fn store_file(self: &Arc<Self>, path: PathBuf, name: Name) -> io::Result<Option<Url>> {
+    let cache = self.to_owned();
+    task::spawn_blocking(move || cache.store_file_blocking(&path, name)).await?
+  }
+}
+
+impl LruFileCache {
+  pub fn new_blocking(base_url: Url, working_dir: PathBuf, bytes_limit: u64) -> io::Result<Self> {
     let cache = Self {
-      state: state.into(),
+      state: State::new(&working_dir)?.into(),
       bytes_limit,
       base_url,
       working_dir,
     };
 
-    tracing::debug!("initializing cache: done");
-    cache.log_stats().await;
+    cache.log_stats();
 
     Ok(cache)
   }
 
-  pub async fn watch(&self) -> io::Result<()> {
+  pub fn watch_blocking(&self) -> io::Result<()> {
+    let mut inotify = Inotify::init()?;
     let mut buffer = [0; 1 << 10];
-    let mut inotify = Inotify::init()?.into_event_stream(&mut buffer)?;
 
     let mask = WatchMask::OPEN | WatchMask::MOVE_SELF | WatchMask::DELETE_SELF;
     inotify.watches().add(&self.working_dir, mask)?;
 
     tracing::debug!("watching filesystem events…");
-    while let Some(event) = inotify.next().await {
-      let event = event?;
+    loop {
+      let mut events = inotify.read_events_blocking(&mut buffer)?;
 
-      if event.mask.intersects(EventMask::MOVE_SELF | EventMask::DELETE_SELF) {
-        tracing::warn!("cache directory was moved or deleted");
-        break;
-      }
+      while let Some(event) = events.next() {
+        if event.mask.intersects(EventMask::MOVE_SELF | EventMask::DELETE_SELF) {
+          tracing::warn!("cache directory was moved or deleted");
+          break;
+        }
 
-      if let (EventMask::OPEN, Some(name)) = (event.mask, event.name) {
-        tracing::trace!(?name, "file open event");
+        if let (EventMask::OPEN, Some(name)) = (event.mask, event.name) {
+          tracing::trace!(?name, "file open event");
 
-        // NOTE: apparently similar api exists in std
-        // but for some reason they put it under `std::fs::File::set_times`
-        // instead of `std::fs::set_times` which makes it unusable
-        // for this use case (`File::open` triggers an fs event and
-        // we're literally in the loop that listens to these events)
-        let path = self.working_dir.join(&name);
-        let atime = FileTime::now();
-        filetime::set_file_atime(&path, atime)?;
+          // NOTE: apparently similar api exists in std
+          // but for some reason they put it under `std::fs::File::set_times`
+          // instead of `std::fs::set_times` which makes it unusable
+          // for this use case (`File::open` triggers an fs event and
+          // we're literally in the loop that listens to these events)
+          let path = self.working_dir.join(&name);
+          let atime = FileTime::now();
+          filetime::set_file_atime(&path, atime)?;
 
-        let mut state = self.state.lock().await;
-        state.files.promote(&name);
+          let mut state = self.state.lock();
+          state.files.promote(name);
+        }
       }
     }
-
-    Ok(())
   }
 
-  pub async fn store_file(&self, path: &Path, name: Name<'_>) -> io::Result<Option<Url>> {
-    let meta = tokio::fs::metadata(path).await?;
+  pub fn store_file_blocking(&self, path: &Path, name: Name) -> io::Result<Option<Url>> {
+    let meta = fs::metadata(path)?;
     let size = meta.len() as u64;
     let name = match name {
       Name::Keep => path.file_name().unwrap().to_string_lossy(),
-      Name::Set(name) => Cow::Borrowed(name),
+      Name::Set(name) => Cow::Owned(name),
     };
     tracing::debug!(?name, "storing a {}B file…", size.iec());
 
-    let hash = {
-      let path = path.to_owned();
-      task::spawn_blocking(move || hash_file(&path)).await??
-    };
-
+    let hash = hash_file(path)?;
     let hash = format!("{:016x}", hash);
     let url = self.build_url(&hash, &name).unwrap();
     tracing::debug!(%url);
@@ -116,47 +125,48 @@ impl LruFileCache {
       name.into_os_string()
     };
 
-    if self.state.lock().await.files.contains(&hashed_name) {
+    if self.state.lock().files.contains(&hashed_name) {
       tracing::debug!("already stored");
       Ok(Some(url))
-    } else if !self.reserve(size).await? {
+    } else if !self.reserve(size)? {
       tracing::debug!("too big");
       Ok(None)
     } else {
       std::fs::copy(path, self.working_dir.join(&hashed_name))?;
-      self.state.lock().await.push(hashed_name, size);
-      self.log_stats().await;
+      self.state.lock().push(hashed_name, size);
+      self.log_stats();
       Ok(Some(url))
     }
   }
+}
 
-  async fn reserve(&self, bytes: u64) -> io::Result<bool> {
+impl LruFileCache {
+  fn reserve(&self, bytes: u64) -> io::Result<bool> {
     let fits = bytes <= self.bytes_limit;
 
     if fits {
-      let mut state = self.state.lock().await;
+      let mut state = self.state.lock();
+
       let overshoot = (state.bytes_stored + bytes).saturating_sub(self.bytes_limit);
       tracing::debug!("reserving {}B (overshoot: {}B)", bytes.iec(), overshoot.iec());
 
       while state.bytes_stored + bytes > self.bytes_limit {
         let (name, file) = state.pop().unwrap();
         tracing::debug!(?name, "removing a {}B file…", file.size.iec());
-        tokio::fs::remove_file(&self.working_dir.join(&name)).await?;
+        fs::remove_file(&self.working_dir.join(&name))?;
       }
     }
 
     Ok(fits)
   }
 
-  async fn log_stats(&self) {
-    let state = self.state.lock().await;
-    tracing::debug!(
-      "cache: {} files ({}B/{}B, {:.0}%)",
-      state.files.len(),
-      state.bytes_stored.iec(),
-      self.bytes_limit.iec(),
-      state.bytes_stored as f64 / self.bytes_limit as f64 * 100.0,
-    );
+  fn log_stats(&self) {
+    let state = self.state.lock();
+    let files = state.files.len();
+    let stored = state.bytes_stored.iec();
+    let limit = self.bytes_limit.iec();
+    let ratio = state.bytes_stored as f64 / self.bytes_limit as f64 * 100.0;
+    tracing::debug!("cache: {} files ({}B/{}B, {:.0}%)", files, stored, limit, ratio);
   }
 
   fn build_url(&self, hash: &str, name: &str) -> Result<Url, ()> {
@@ -166,22 +176,16 @@ impl LruFileCache {
   }
 }
 
-// ---
-
-#[derive(Debug)]
-struct State {
-  bytes_stored: u64,
-  files: LruCache<OsString, File>,
-}
-
 impl State {
-  fn new(path: PathBuf) -> io::Result<Self> {
+  fn new(path: &Path) -> io::Result<Self> {
+    tracing::debug!("initializing cache state…");
+
     tracing::trace!("mkdir -p {:?}", path);
-    fs::create_dir_all(&path)?;
+    fs::create_dir_all(path)?;
 
     let mut bytes_stored = 0;
     let mut file_tuples = Vec::new();
-    for entry in fs::read_dir(&path)? {
+    for entry in fs::read_dir(path)? {
       let entry = entry?;
       if entry.file_type()?.is_file() {
         let name = entry.file_name();
@@ -200,6 +204,8 @@ impl State {
       files.push(name, File { size });
     }
 
+    tracing::debug!("initializing cache state: done");
+
     Ok(Self { bytes_stored, files })
   }
 
@@ -214,8 +220,6 @@ impl State {
     Some((name, file))
   }
 }
-
-// ---
 
 fn hash_file(path: &Path) -> io::Result<u64> {
   let mut hasher = DefaultHasher::new();

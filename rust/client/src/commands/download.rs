@@ -52,16 +52,19 @@ pub async fn run(
   let content = format!("[{}](<{}>)", info.title, info.webpage_url);
 
   if fsize > ctx.filesize_limit().await? {
-    let ext = fpath.extension().and_then(|e| e.to_str()).unwrap();
-    let name = format!("{}.{}", info.title, ext);
+    let fext = fpath.extension().and_then(|e| e.to_str()).unwrap();
 
     tracing::debug!("caching…");
-    let mut url = ctx.client.cache.store_file(&fpath, Name::Set(&name)).await?.unwrap();
+    let mut url = {
+      let fpath = fpath.clone();
+      let fname = Name::Set(format!("{}.{}", info.title, fext));
+      ctx.client.cache.store_file(fpath, fname).await?.unwrap()
+    };
     if let Some(params) = fmt_embed_params(&info, &selected) {
       url.set_query(Some(&params))
     }
 
-    let content = format!("{} \u{205D} [{}]({}) {}B", content, ext, url, fsize.iec());
+    let content = format!("{} \u{205D} [{}]({}) {}B", content, fext, url, fsize.iec());
     let edit = EditInteractionResponse::new()
       .components(Default::default()) // remove components
       .content(content);

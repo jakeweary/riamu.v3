@@ -65,8 +65,9 @@ async fn deezer(ctx: &Context<'_>, query: &str, with_banner: bool) -> Result<()>
 
   tracing::debug!("caching…");
   let url = {
-    let name = format!("{} - {}.{}", info.artist.name, info.title, fext);
-    ctx.client.cache.store_file(&fpath, Name::Set(&name)).await?.unwrap()
+    let fpath = fpath.clone();
+    let fname = Name::Set(format!("{} - {}.{}", info.artist.name, info.title, fext));
+    ctx.client.cache.store_file(fpath, fname).await?.unwrap()
   };
 
   if with_banner {

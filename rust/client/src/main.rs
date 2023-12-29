@@ -24,5 +24,8 @@ fn main() -> client::Result<()> {
   tracing::debug!("starting client…");
   rt.block_on(client::Client::start())?;
 
+  // https://docs.rs/tokio/latest/tokio/runtime/struct.Runtime.html#shutdown
+  rt.shutdown_background();
+
   Ok(())
 }

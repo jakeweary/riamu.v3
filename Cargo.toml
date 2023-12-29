@@ -34,6 +34,7 @@ log = "*"
 lru = { version = "*", default-features = false }
 pango = "*"
 pangocairo = "*"
+parking_lot = "*"
 procfs = { version = "*", default-features = false }
 pyo3 = "*"
 rand = "*"
