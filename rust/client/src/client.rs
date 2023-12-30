@@ -1,5 +1,3 @@
-use std::error::Error as StdError;
-use std::io::Result as IoResult;
 use std::panic::AssertUnwindSafe;
 use std::result::Result as StdResult;
 use std::sync::Arc;
@@ -32,7 +30,7 @@ mod env;
 mod traits;
 mod util;
 
-pub type Error = Box<dyn StdError + Send + Sync>;
+pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T> = StdResult<T, Error>;
 
 // pub type Error = anyhow::Error;
@@ -85,17 +83,19 @@ impl Client {
         r = signal::ctrl_c() => r?,
       }
 
-      let timeout = Duration::from_secs(10);
-      let shutdown = tokio::time::timeout(timeout, async move {
-        tracing::info!("shutting down…");
-        shard_manager.shutdown_all().await;
-      });
+      let shutdown = shard_manager.shutdown_all();
+      let shutdown = tokio::time::timeout(Duration::from_secs(5), shutdown);
+      let sleep = tokio::time::sleep(Duration::from_secs(5));
 
-      if shutdown.await.is_err() {
-        tracing::warn!("failed to shutdown gracefully (timeout)");
+      tracing::info!("shutting down…");
+      if shutdown.await.is_ok() {
+        sleep.await // don't exit immediately after sending shutdown signal
       }
 
-      IoResult::Ok(())
+      // if the shutdown was successful this line should not be reached
+      tracing::warn!("failed to shutdown gracefully");
+
+      Result::Ok(())
     };
 
     tokio::select! {

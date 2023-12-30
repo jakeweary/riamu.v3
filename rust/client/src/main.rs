@@ -15,17 +15,17 @@ mod tracing;
 fn main() -> client::Result<()> {
   tracing::init()?;
 
-  tracing::debug!("initializing pyo3…");
+  tracing::debug!("initializing python…");
   python::init()?;
 
   tracing::debug!("initializing async runtime…");
   let rt = Runtime::new_current_thread().enable_all().build()?;
 
   tracing::debug!("starting client…");
-  rt.block_on(client::Client::start())?;
+  let res = rt.block_on(client::Client::start());
 
   // https://docs.rs/tokio/latest/tokio/runtime/struct.Runtime.html#shutdown
   rt.shutdown_background();
 
-  Ok(())
+  res
 }
