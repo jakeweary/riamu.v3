@@ -1,5 +1,64 @@
 // https://gist.github.com/rygorous/2203834
 
+pub fn f32_to_srgb8_v1(x: f32) -> u8 {
+  let almost_one = f32::from_bits(0x3f7fffff); // 1-eps
+  let lut_thresh = f32::from_bits(0x3b800000); // 2^(-8)
+  let linear_sc = f32::from_bits(0x454c5d00);
+  let float_to_int = f32::from_bits((127 + 23) << 23);
+
+  // Clamp to [0, 1-eps]; these two values map to 0 and 1, respectively.
+  // The tests are carefully written so that NaNs map to 0, same as in the reference
+  // implementation.
+  let f = clamp(x, 0.0, almost_one);
+
+  // Check which region this value falls into
+  if f < lut_thresh {
+    // linear region
+    // use "magic value" to get float->int with rounding. (float_to_int)
+    f.mul_add(linear_sc, float_to_int).to_bits() as u8
+  } else {
+    // non-linear region
+    let tab_i = ((f.to_bits() >> 20) % 64) as usize;
+    let tab = FP32_TO_SRGB8_TAB3[tab_i];
+    lerp(tab, f)
+  }
+}
+
+pub fn f32_to_srgb8_v2(x: f32) -> u8 {
+  let almost_one = f32::from_bits(0x3f7fffff); // 1-eps
+  let min_val = f32::from_bits((127 - 13) << 23);
+
+  // Clamp to [2^(-13), 1-eps]; these two values map to 0 and 1, respectively.
+  // The tests are carefully written so that NaNs map to 0, same as in the reference
+  // implementation.
+  let f = clamp(x, min_val, almost_one);
+
+  let tab_i = (f.to_bits() - min_val.to_bits()) as usize >> 20;
+  let tab = unsafe { *FP32_TO_SRGB8_TAB4.get_unchecked(tab_i) };
+  lerp(tab, f)
+}
+
+// ---
+
+fn lerp(packed: u32, f: f32) -> u8 {
+  // Unpack bias, scale
+  let bias = (packed >> 16) << 9;
+  let scale = packed & 0xffff;
+
+  // Grab next-highest mantissa bits and perform linear interpolation
+  let t = (f.to_bits() >> 12) & 0xff;
+  ((bias + scale * t) >> 16) as u8
+}
+
+fn clamp(x: f32, min: f32, max: f32) -> f32 {
+  match x {
+    #[allow(clippy::neg_cmp_op_on_partial_ord)]
+    x if !(x > min) => min, // written this way to catch NaNs
+    x if x > max => max,
+    x => x,
+  }
+}
+
 #[rustfmt::skip]
 const FP32_TO_SRGB8_TAB3: [u32; 64] = [
   0x0b0f01cb, 0x0bf401ae, 0x0ccb0195, 0x0d950180, 0x0e56016e, 0x0f0d015e, 0x0fbc0150, 0x10630143,
@@ -29,66 +88,13 @@ const FP32_TO_SRGB8_TAB4: [u32; 104] = [
   0x5e0c0a23, 0x631c0980, 0x67db08f6, 0x6c55087f, 0x70940818, 0x74a007bd, 0x787d076c, 0x7c330723,
 ];
 
-pub fn v1(x: f32) -> u8 {
-  let almostone = f32::from_bits(0x3f7fffff); // 1-eps
-  let lutthresh = f32::from_bits(0x3b800000); // 2^(-8)
-  let linearsc = f32::from_bits(0x454c5d00);
-  let float2int = f32::from_bits((127 + 23) << 23);
+#[test]
+fn test() {
+  use super::srgb8_to_f32;
 
-  // Clamp to [0, 1-eps]; these two values map to 0 and 1, respectively.
-  // The tests are carefully written so that NaNs map to 0, same as in the reference
-  // implementation.
-  let f = clamp(x, 0.0, almostone);
-  let u = f.to_bits();
-
-  // Check which region this value falls into
-  // linear region
-  let u = if f < lutthresh {
-    // use "magic value" to get float->int with rounding. (float2int)
-    (f * linearsc + float2int).to_bits()
-  }
-  // non-linear region
-  else {
-    // Unpack bias, scale from table
-    let tab = FP32_TO_SRGB8_TAB3[((u >> 20) % 64) as usize];
-    let bias = (tab >> 16) << 9;
-    let scale = tab & 0xffff;
-
-    // Grab next-highest mantissa bits and perform linear interpolation
-    let t = (u >> 12) & 0xff;
-    (bias + (scale * t)) >> 16
-  };
-
-  u as u8
-}
-
-pub fn v2(x: f32) -> u8 {
-  let almostone = f32::from_bits(0x3f7fffff); // 1-eps
-  let minval = f32::from_bits((127 - 13) << 23);
-
-  // Clamp to [2^(-13), 1-eps]; these two values map to 0 and 1, respectively.
-  // The tests are carefully written so that NaNs map to 0, same as in the reference
-  // implementation.
-  let f = clamp(x, minval, almostone);
-  let u = f.to_bits();
-
-  // Do the table lookup and unpack bias, scale
-  let tab_i = (u - minval.to_bits()) as usize >> 20;
-  let tab = unsafe { *FP32_TO_SRGB8_TAB4.get_unchecked(tab_i) };
-  let bias = (tab >> 16) << 9;
-  let scale = tab & 0xffff;
-
-  // Grab next-highest mantissa bits and perform linear interpolation
-  let t = (u >> 12) & 0xff;
-  let u = (bias + (scale * t)) >> 16;
-  u as u8
-}
-
-fn clamp(x: f32, min: f32, max: f32) -> f32 {
-  match x {
-    #[allow(clippy::neg_cmp_op_on_partial_ord)]
-    x if !(x > min) => min, // written this way to catch NaNs
-    x if x > max => max,
-    x => x,
+  for u in 0..=u8::MAX {
+    let f = srgb8_to_f32(u);
+    assert_eq!(u, f32_to_srgb8_v1(f));
+    assert_eq!(u, f32_to_srgb8_v2(f));
   }
 }

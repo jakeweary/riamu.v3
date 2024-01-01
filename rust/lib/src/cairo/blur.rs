@@ -1,7 +1,10 @@
 use std::f32::consts::TAU;
-use std::{array, iter, slice};
+use std::{iter, slice};
 
 use cairo::*;
+
+use crate::color::srgb::f32_to_srgb8_v2 as srgb_oetf;
+use crate::color::srgb::srgb8_to_f32 as srgb_eotf;
 
 pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
   let width = srf.width();
@@ -21,11 +24,6 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
     let f = |x: f32| k0 * (-k1 * x * x).exp();
     let lut: Vec<_> = (0..=radius).map(|i| f(i as f32)).collect();
     move |x: i32| unsafe { *lut.get_unchecked(x.unsigned_abs() as usize) }
-  };
-
-  let srgb_eotf = {
-    let lut: [_; 0x100] = array::from_fn(|i| srgb::eotf(i as u8));
-    move |x: u8| unsafe { *lut.get_unchecked(x as usize) }
   };
 
   let blur = |dst: &mut [u8], src: &[u8], width: i32, height: i32| {
@@ -55,10 +53,10 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
           sum += g;
         }
 
-        let a = srgb::oetf(acc[0] / sum);
-        let b = srgb::oetf(acc[1] / sum);
-        let c = srgb::oetf(acc[2] / sum);
-        let d = srgb::oetf(acc[3] / sum);
+        let a = srgb_oetf(acc[0] / sum);
+        let b = srgb_oetf(acc[1] / sum);
+        let c = srgb_oetf(acc[2] / sum);
+        let d = srgb_oetf(acc[3] / sum);
         *dst = [a, b, c, d];
       }
     }
@@ -71,16 +69,4 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
   blur(&mut srf, &tmp, height, width);
 
   Ok(())
-}
-
-mod srgb {
-  use crate::color::{convert, srgb};
-
-  pub fn eotf(x: u8) -> f32 {
-    srgb::transfer_fns::f32::eotf(convert::unorm8::f32(x))
-  }
-
-  pub fn oetf(x: f32) -> u8 {
-    srgb::float_to_srgb8::v2(x)
-  }
 }

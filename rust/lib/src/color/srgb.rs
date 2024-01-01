@@ -4,7 +4,12 @@ use std::{mem, slice};
 
 use super::convert;
 
-pub mod float_to_srgb8;
+pub use self::f32_to_srgb8::*;
+pub use self::srgb8_to_f32::*;
+
+mod f32_to_srgb8;
+mod srgb8_to_f32;
+
 pub mod transfer_fns;
 
 #[allow(non_camel_case_types)]
@@ -174,7 +179,6 @@ macro_rules! impls(($T:ident, $U:ident) => {
       Self(self.0.map(transfer_fns::$T::oetf))
     }
   }
-
 });
 
 impls!(f32, f64);
