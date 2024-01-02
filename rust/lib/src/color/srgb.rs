@@ -148,8 +148,6 @@ impls!(sRGB<u8, 3>, [u8; 3]);
 // sRGB<f32, N> ←→ sRGB<f64, N>
 // sRGB<f32, N> ←→ sRGB<u8, N>
 // sRGB<f64, N> ←→ sRGB<u8, N>
-//
-// and transfer functions
 
 macro_rules! impls(($T:ident, $U:ident) => {
   impl<const N: usize> From<sRGB<$U, N>> for sRGB<$T, N> {
@@ -169,7 +167,15 @@ macro_rules! impls(($T:ident, $U:ident) => {
       sRGB(srgb.0.map(convert::$T::unorm8))
     }
   }
+});
 
+impls!(f32, f64);
+impls!(f64, f32);
+
+// sRGB<f32, N> → oetf → sRGB<f32, N>
+// sRGB<f32, N> ← eotf ← sRGB<f32, N>
+
+macro_rules! impls(($T:ident) => {
   impl<const N: usize> sRGB<$T, N> {
     pub fn eotf(self) -> Self {
       Self(self.0.map(transfer_fns::$T::eotf))
@@ -181,8 +187,23 @@ macro_rules! impls(($T:ident, $U:ident) => {
   }
 });
 
-impls!(f32, f64);
-impls!(f64, f32);
+impls!(f32);
+impls!(f64);
+
+// sRGB<f32, N> → oetf → sRGB<u8, N>
+// sRGB<f32, N> ← eotf ← sRGB<u8, N>
+
+impl<const N: usize> sRGB<f32, N> {
+  pub fn oetf_u8(self) -> sRGB<u8, N> {
+    sRGB(self.0.map(f32_to_srgb8_v2))
+  }
+}
+
+impl<const N: usize> sRGB<u8, N> {
+  pub fn eotf_f32(self) -> sRGB<f32, N> {
+    sRGB(self.0.map(srgb8_to_f32))
+  }
+}
 
 // ---
 

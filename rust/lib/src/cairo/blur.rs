@@ -7,11 +7,13 @@ use crate::color::srgb::f32_to_srgb8_v2 as srgb_oetf;
 use crate::color::srgb::srgb8_to_f32 as srgb_eotf;
 
 pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
+  assert_eq!(srf.format(), Format::Rgb24);
+
   let width = srf.width();
   let height = srf.height();
 
   // NOTE: this buffer is transposed to make it a bit more cache-friendly on the 2nd step
-  let mut tmp = ImageSurface::create(Format::ARgb32, height, width)?;
+  let mut tmp = ImageSurface::create(Format::Rgb24, height, width)?;
   let mut tmp = tmp.data().unwrap();
   let mut srf = srf.data().unwrap();
 
@@ -43,21 +45,19 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
         let dst = unsafe { &mut *dst.add(i) };
 
         let mut acc = [0.0; 4];
-        let mut sum = 0.0;
-        for (&src, dx) in iter::zip(src, x_min - x..) {
-          let g = gauss(dx);
-          acc[0] += g * srgb_eotf(src[0]);
-          acc[1] += g * srgb_eotf(src[1]);
-          acc[2] += g * srgb_eotf(src[2]);
-          acc[3] += g * srgb_eotf(src[3]);
-          sum += g;
+        for (&[r, g, b, _], dx) in iter::zip(src, x_min - x..) {
+          let gʹ = gauss(dx);
+          acc[0] += gʹ * srgb_eotf(r);
+          acc[1] += gʹ * srgb_eotf(g);
+          acc[2] += gʹ * srgb_eotf(b);
+          acc[3] += gʹ;
         }
 
-        let a = srgb_oetf(acc[0] / sum);
-        let b = srgb_oetf(acc[1] / sum);
-        let c = srgb_oetf(acc[2] / sum);
-        let d = srgb_oetf(acc[3] / sum);
-        *dst = [a, b, c, d];
+        let [r, g, b, gʹ] = acc;
+        let r = srgb_oetf(r / gʹ);
+        let g = srgb_oetf(g / gʹ);
+        let b = srgb_oetf(b / gʹ);
+        *dst = [r, g, b, 0xff];
       }
     }
   };

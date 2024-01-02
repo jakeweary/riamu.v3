@@ -1,3 +1,6 @@
+// https://color.org/chardata/rgb/srgb.xalter
+// https://entropymine.com/imageworsener/srgbformula
+
 macro_rules! impl_fns(($T:ident) => {
   pub mod $T {
     pub fn eotf(x: $T) -> $T {
