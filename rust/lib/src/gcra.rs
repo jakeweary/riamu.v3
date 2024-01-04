@@ -18,6 +18,7 @@ pub use self::{hours as h, minutes as m, seconds as s};
 pub use self::{micros as us, millis as ms, nanos as ns};
 
 pub type Result = std::result::Result<(), Retry>;
+pub type ResultAndInfo = (Result, Info);
 
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub enum Retry {
@@ -27,10 +28,10 @@ pub enum Retry {
 
 // ---
 
+#[derive(Clone, Copy)]
 pub struct Info {
-  pub result: Result,
   pub rate: Rate,
-  pub reset: u64, // nanoseconds
+  pub reset: u64, // duration, nanoseconds
 }
 
 impl Info {
@@ -93,23 +94,38 @@ impl Div<Duration> for Quota {
 
 #[derive(Default)]
 pub struct State {
-  pub tat: u64,
+  pub tat: u64, // unix time, nanoseconds
 }
 
 impl State {
-  pub fn scale(&mut self, old: Rate, new: Rate) {
-    self.scale_at(old, new, unix_epoch_ns())
+  pub fn info(&mut self, rate: Rate) -> Info {
+    self.info_at(rate, unix_time_ns())
   }
 
-  pub fn update(&mut self, rate: Rate, n: f64) -> Info {
-    self.update_at(rate, n, unix_epoch_ns(), false)
+  pub fn scale(&mut self, old: Rate, new: Rate) -> Info {
+    self.scale_at(old, new, unix_time_ns(), false)
   }
 
-  pub fn forced_update(&mut self, rate: Rate, n: f64) -> Info {
-    self.update_at(rate, n, unix_epoch_ns(), true)
+  pub fn saturating_scale(&mut self, old: Rate, new: Rate) -> Info {
+    self.scale_at(old, new, unix_time_ns(), true)
   }
 
-  fn scale_at(&mut self, old: Rate, new: Rate, t_arrived: u64) {
+  pub fn update(&mut self, rate: Rate, amount: f64) -> ResultAndInfo {
+    self.update_at(rate, amount, unix_time_ns(), false)
+  }
+
+  pub fn forced_update(&mut self, rate: Rate, amount: f64) -> ResultAndInfo {
+    self.update_at(rate, amount, unix_time_ns(), true)
+  }
+}
+
+impl State {
+  fn info_at(&mut self, rate: Rate, t_arrived: u64) -> Info {
+    let reset = self.tat.saturating_sub(t_arrived);
+    Info { rate, reset }
+  }
+
+  fn scale_at(&mut self, old: Rate, new: Rate, t_arrived: u64, saturate: bool) -> Info {
     // scales `tat` according to the difference in provided rates
     // has to be used when, e.g., user buys premium subscription
     // (isn't a part of the original algorithm)
@@ -117,14 +133,17 @@ impl State {
     let q = old.quota / new.quota;
     let p = new.period as f64 / old.period as f64;
     let scaled = q * p * self.tat.saturating_sub(t_arrived) as f64;
-    self.tat = t_arrived + new.period.min(scaled as u64);
+    let limit = if saturate { new.period } else { u64::MAX };
+    self.tat = t_arrived + limit.min(scaled as u64);
+
+    self.info_at(new, t_arrived)
   }
 
-  fn update_at(&mut self, rate: Rate, n: f64, t_arrived: u64, forced: bool) -> Info {
+  fn update_at(&mut self, rate: Rate, n: f64, t_arrived: u64, forced: bool) -> ResultAndInfo {
     let result = 'r: {
       let inc = rate.as_increment();
 
-      // zero `n` is used to to get current info,
+      // zero `n` can be used to to get current info,
       // negative `n` is used to move `tat` backwards
       // (isn't a part of the original algorithm)
       if n <= 0.0 {
@@ -155,8 +174,8 @@ impl State {
       Ok(())
     };
 
-    let reset = self.tat.saturating_sub(t_arrived);
-    Info { result, rate, reset }
+    let info = self.info_at(rate, t_arrived);
+    (result, info)
   }
 }
 
@@ -179,8 +198,7 @@ periods! {
   years   => from_secs   * 60 * 60 * 24 * 365,
 }
 
-#[inline(never)]
-fn unix_epoch_ns() -> u64 {
+fn unix_time_ns() -> u64 {
   let now = SystemTime::now();
   let epoch = now.duration_since(time::UNIX_EPOCH);
   epoch.map_or(0, |d| d.as_nanos() as u64)
@@ -194,15 +212,21 @@ mod tests {
 
   const NORMAL: bool = false;
   const FORCED: bool = true;
+  const SATURATE: bool = true;
 
   #[test]
   fn basics() {
     let rate = Quota(2.0) / hours(1);
     let mut state = State::default();
 
-    assert!(state.update(rate, 1.0).result.is_ok());
-    assert!(state.update(rate, 1.0).result.is_ok());
-    assert!(state.update(rate, 1.0).result.is_err());
+    let (result, _) = state.update(rate, 1.0);
+    assert!(result.is_ok());
+
+    let (result, _) = state.update(rate, 1.0);
+    assert!(result.is_ok());
+
+    let (result, _) = state.update(rate, 1.0);
+    assert!(result.is_err());
   }
 
   #[test]
@@ -210,12 +234,23 @@ mod tests {
     let rate = Quota(2.0) / ns(2);
     let mut state = State::default();
 
-    assert_eq!(state.update_at(rate, 2.0, 1, NORMAL).result, Ok(()));
-    assert_eq!(state.update_at(rate, 2.0, 1, NORMAL).result, Err(Retry::After(ns(2))));
-    assert_eq!(state.update_at(rate, 1.0, 1, NORMAL).result, Err(Retry::After(ns(1))));
-    assert_eq!(state.update_at(rate, 2.0, 2, NORMAL).result, Err(Retry::After(ns(1))));
-    assert_eq!(state.update_at(rate, 1.0, 2, NORMAL).result, Ok(()));
-    assert_eq!(state.update_at(rate, 3.0, 2, NORMAL).result, Err(Retry::Never));
+    let (result, _) = state.update_at(rate, 2.0, 1, NORMAL);
+    assert_eq!(result, Ok(()));
+
+    let (result, _) = state.update_at(rate, 2.0, 1, NORMAL);
+    assert_eq!(result, Err(Retry::After(ns(2))));
+
+    let (result, _) = state.update_at(rate, 1.0, 1, NORMAL);
+    assert_eq!(result, Err(Retry::After(ns(1))));
+
+    let (result, _) = state.update_at(rate, 2.0, 2, NORMAL);
+    assert_eq!(result, Err(Retry::After(ns(1))));
+
+    let (result, _) = state.update_at(rate, 1.0, 2, NORMAL);
+    assert_eq!(result, Ok(()));
+
+    let (result, _) = state.update_at(rate, 3.0, 2, NORMAL);
+    assert_eq!(result, Err(Retry::Never));
   }
 
   #[test]
@@ -223,13 +258,26 @@ mod tests {
     let rate = Quota(5.0) / ns(5);
     let mut state = State::default();
 
-    assert_eq!(state.update_at(rate, -1.0, 1, NORMAL).reset(), ns(0));
-    assert_eq!(state.update_at(rate, 0.0, 1, NORMAL).reset(), ns(0));
-    assert_eq!(state.update_at(rate, 1.0, 1, NORMAL).reset(), ns(1));
-    assert_eq!(state.update_at(rate, 2.0, 1, NORMAL).reset(), ns(3));
-    assert_eq!(state.update_at(rate, -1.0, 1, NORMAL).reset(), ns(2));
-    assert_eq!(state.update_at(rate, -10.0, 1, NORMAL).reset(), ns(0));
-    assert_eq!(state.update_at(rate, 1.0, 1, NORMAL).reset(), ns(1));
+    let (_, info) = state.update_at(rate, -1.0, 1, NORMAL);
+    assert_eq!(info.reset(), ns(0));
+
+    let (_, info) = state.update_at(rate, 0.0, 1, NORMAL);
+    assert_eq!(info.reset(), ns(0));
+
+    let (_, info) = state.update_at(rate, 1.0, 1, NORMAL);
+    assert_eq!(info.reset(), ns(1));
+
+    let (_, info) = state.update_at(rate, 2.0, 1, NORMAL);
+    assert_eq!(info.reset(), ns(3));
+
+    let (_, info) = state.update_at(rate, -1.0, 1, NORMAL);
+    assert_eq!(info.reset(), ns(2));
+
+    let (_, info) = state.update_at(rate, -10.0, 1, NORMAL);
+    assert_eq!(info.reset(), ns(0));
+
+    let (_, info) = state.update_at(rate, 1.0, 1, NORMAL);
+    assert_eq!(info.reset(), ns(1));
   }
 
   #[test]
@@ -237,13 +285,13 @@ mod tests {
     let rate = Quota(4.0) / ns(4);
     let mut state = State::default();
 
-    let info = state.update_at(rate, 1.0, 1, NORMAL);
+    let (_, info) = state.update_at(rate, 1.0, 1, NORMAL);
     assert_eq!((info.ratio(), info.used(), info.remaining()), (0.25, 1.0, 3.0));
 
-    let info = state.update_at(rate, 1.0, 1, NORMAL);
+    let (_, info) = state.update_at(rate, 1.0, 1, NORMAL);
     assert_eq!((info.ratio(), info.used(), info.remaining()), (0.50, 2.0, 2.0));
 
-    let info = state.update_at(rate, 1.0, 1, NORMAL);
+    let (_, info) = state.update_at(rate, 1.0, 1, NORMAL);
     assert_eq!((info.ratio(), info.used(), info.remaining()), (0.75, 3.0, 1.0));
   }
 
@@ -252,8 +300,8 @@ mod tests {
     let rate = Quota(1.0) / ns(1000);
     let mut state = State::default();
 
-    let info = state.update_at(rate, 0.123, 1, NORMAL);
-    assert_eq!(info.result, Ok(()));
+    let (result, info) = state.update_at(rate, 0.123, 1, NORMAL);
+    assert_eq!(result, Ok(()));
     assert_eq!(info.reset(), ns(123));
     assert_eq!((info.ratio(), info.used(), info.remaining()), (0.123, 0.123, 0.877));
   }
@@ -263,8 +311,8 @@ mod tests {
     let rate = Quota(5.0) / ns(5);
     let mut state = State::default();
 
-    let info = state.update_at(rate, 100.0, 1, FORCED);
-    assert_eq!(info.result, Ok(()));
+    let (result, info) = state.update_at(rate, 100.0, 1, FORCED);
+    assert_eq!(result, Ok(()));
     assert_eq!(info.reset(), ns(100));
     assert_eq!((info.ratio(), info.used(), info.remaining()), (20.0, 100.0, -95.0));
   }
@@ -275,17 +323,17 @@ mod tests {
     let long = Quota(100.0) / minutes(1);
     let mut state = State::default();
 
-    let info = state.update_at(short, 9.0, 1, NORMAL);
+    let (_, info) = state.update_at(short, 9.0, 1, NORMAL);
     assert_eq!((info.used(), info.remaining()), (9.0, 1.0));
 
-    state.scale_at(short, long, 1);
+    state.scale_at(short, long, 1, SATURATE);
 
-    let info = state.update_at(long, 90.0, 1, NORMAL);
+    let (_, info) = state.update_at(long, 90.0, 1, NORMAL);
     assert_eq!((info.used(), info.remaining()), (99.0, 1.0));
 
-    state.scale_at(long, short, 1);
+    state.scale_at(long, short, 1, SATURATE);
 
-    let info = state.update_at(short, 0.0, 1, NORMAL);
+    let (_, info) = state.update_at(short, 0.0, 1, NORMAL);
     assert_eq!((info.used(), info.remaining()), (10.0, 0.0));
   }
 }

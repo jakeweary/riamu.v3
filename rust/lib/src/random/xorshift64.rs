@@ -1,6 +1,10 @@
 // https://en.wikipedia.org/wiki/Xorshift
 // https://jstatsoft.org/v08/i14/paper
 
+use rand_core::{Error, RngCore, SeedableRng};
+
+use super::*;
+
 pub struct XorShift64(pub u64);
 
 impl XorShift64 {
@@ -16,19 +20,19 @@ impl XorShift64 {
   }
 
   pub fn f64(&mut self) -> f64 {
-    super::f64(self.u64())
+    f64(self.u64())
   }
 
   pub fn f32(&mut self) -> f32 {
-    super::f32(self.u64() as u32)
+    f32(self.u64() as u32)
   }
 
   pub fn fill(&mut self, dst: &mut [u8]) {
-    super::fill(dst, || self.u64().to_ne_bytes());
+    fill(dst, || self.u64().to_ne_bytes());
   }
 }
 
-impl rand_core::SeedableRng for XorShift64 {
+impl SeedableRng for XorShift64 {
   type Seed = [u8; 8];
 
   fn from_seed(seed: Self::Seed) -> Self {
@@ -40,7 +44,7 @@ impl rand_core::SeedableRng for XorShift64 {
   }
 }
 
-impl rand_core::RngCore for XorShift64 {
+impl RngCore for XorShift64 {
   fn next_u32(&mut self) -> u32 {
     self.u32()
   }
@@ -53,7 +57,7 @@ impl rand_core::RngCore for XorShift64 {
     self.fill(dst);
   }
 
-  fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), rand_core::Error> {
+  fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Error> {
     self.fill(dst);
     Ok(())
   }

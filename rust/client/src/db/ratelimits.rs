@@ -6,16 +6,16 @@ use super::*;
 
 pub use gcra::*;
 
-pub async fn update(pool: &Pool, key: impl Hash, rate: Rate) -> sqlx::Result<Info> {
+pub async fn update(pool: &Pool, key: impl Hash, rate: Rate) -> sqlx::Result<ResultAndInfo> {
   update_n(pool, key, rate, 1.0).await
 }
 
-pub async fn update_n(pool: &Pool, key: impl Hash, rate: Rate, n: f64) -> sqlx::Result<Info> {
+pub async fn update_n(pool: &Pool, key: impl Hash, rate: Rate, n: f64) -> sqlx::Result<ResultAndInfo> {
   let key = hash(key) as i64;
   update_n_inner(pool, key, rate, n).await
 }
 
-async fn update_n_inner(pool: &Pool, key: i64, rate: Rate, n: f64) -> sqlx::Result<Info> {
+async fn update_n_inner(pool: &Pool, key: i64, rate: Rate, n: f64) -> sqlx::Result<ResultAndInfo> {
   let mut tx = pool.begin().await?;
 
   let q = sqlx::query_scalar("select tat from gcra where key = ?");
@@ -23,16 +23,16 @@ async fn update_n_inner(pool: &Pool, key: i64, rate: Rate, n: f64) -> sqlx::Resu
   let tat = tat.unwrap_or(0_i64) as u64;
 
   let mut state = gcra::State { tat };
-  let info = state.update(rate, n);
+  let (result, info) = state.update(rate, n);
 
-  if info.result.is_ok() {
+  if result.is_ok() {
     let q = sqlx::query("insert or replace into gcra (key, tat) values (?, ?)");
     q.bind(key).bind(state.tat as i64).execute(&mut *tx).await?;
   }
 
   tx.commit().await?;
 
-  Ok(info)
+  Ok((result, info))
 }
 
 fn hash(input: impl Hash) -> u64 {
