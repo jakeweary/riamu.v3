@@ -136,7 +136,7 @@ pub fn find_gamut_intersection(a: f32, b: f32, L1: f32, C1: f32, L0: f32, L_cusp
   // Find the intersection for upper and lower half separately
   // Lower half
   if (L1 - L0) * C_cusp - (L_cusp - L0) * C1 <= 0.0 {
-    return C_cusp * L0 / (C1 * L_cusp + C_cusp * (L0 - L1));
+    C_cusp * L0 / (C1 * L_cusp + C_cusp * (L0 - L1))
   }
   // Upper half
   else {

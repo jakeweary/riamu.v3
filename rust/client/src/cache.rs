@@ -78,9 +78,9 @@ impl LruFileCache {
 
     tracing::debug!("watching filesystem events…");
     loop {
-      let mut events = inotify.read_events_blocking(&mut buffer)?;
+      let events = inotify.read_events_blocking(&mut buffer)?;
 
-      while let Some(event) = events.next() {
+      for event in events {
         if event.mask.intersects(EventMask::MOVE_SELF | EventMask::DELETE_SELF) {
           tracing::warn!("cache directory was moved or deleted");
           break;
@@ -94,7 +94,7 @@ impl LruFileCache {
           // instead of `std::fs::set_times` which makes it unusable
           // for this use case (`File::open` triggers an fs event and
           // we're literally in the loop that listens to these events)
-          let path = self.working_dir.join(&name);
+          let path = self.working_dir.join(name);
           let atime = FileTime::now();
           filetime::set_file_atime(&path, atime)?;
 
