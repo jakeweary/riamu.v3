@@ -10,6 +10,18 @@ pub struct HSV {
 }
 
 impl From<HSV> for RGB {
+  fn from(hsv: HSV) -> Self {
+    Lab::from(hsv).into()
+  }
+}
+
+impl From<RGB> for HSV {
+  fn from(rgb: RGB) -> Self {
+    Lab::from(rgb).into()
+  }
+}
+
+impl From<HSV> for Lab {
   fn from(HSV { h, s, v }: HSV) -> Self {
     let (aʹ, bʹ) = ((TAU * h).cos(), (TAU * h).sin());
     let (L_cusp, C_cusp) = find_cusp(aʹ, bʹ);
@@ -39,13 +51,12 @@ impl From<HSV> for RGB {
 
     let (L, C) = (L_scale * L, L_scale * C);
     let (a, b) = (C * aʹ, C * bʹ);
-    Lab { L, a, b }.into()
+    Lab { L, a, b }
   }
 }
 
-impl From<RGB> for HSV {
-  fn from(rgb: RGB) -> Self {
-    let Lab { L, a, b } = rgb.into();
+impl From<Lab> for HSV {
+  fn from(Lab { L, a, b }: Lab) -> Self {
     let h = 0.5 + (-b).atan2(-a) / TAU;
     let C = a.hypot(b);
     let (aʹ, bʹ) = (a / C, b / C);

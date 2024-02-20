@@ -10,13 +10,25 @@ pub struct HSL {
 }
 
 impl From<HSL> for RGB {
+  fn from(hsl: HSL) -> Self {
+    Lab::from(hsl).into()
+  }
+}
+
+impl From<RGB> for HSL {
+  fn from(rgb: RGB) -> Self {
+    Lab::from(rgb).into()
+  }
+}
+
+impl From<HSL> for Lab {
   fn from(HSL { h, s, l }: HSL) -> Self {
     // TODO: wound ne nice to get rid of these
     if l == 1.0 {
-      return RGB { r: 1.0, g: 1.0, b: 1.0 };
+      return Lab { L: 1.0, a: 0.0, b: 0.0 };
     }
     if l == 0.0 {
-      return RGB { r: 0.0, g: 0.0, b: 0.0 };
+      return Lab { L: 0.0, a: 0.0, b: 0.0 };
     }
 
     let L = toe::inv(l);
@@ -42,13 +54,12 @@ impl From<HSL> for RGB {
 
     let C = k_0 + t * k_1 / (1.0 - k_2 * t);
     let (a, b) = (C * aʹ, C * bʹ);
-    Lab { L, a, b }.into()
+    Lab { L, a, b }
   }
 }
 
-impl From<RGB> for HSL {
-  fn from(rgb: RGB) -> Self {
-    let Lab { L, a, b } = rgb.into();
+impl From<Lab> for HSL {
+  fn from(Lab { L, a, b }: Lab) -> Self {
     let h = 0.5 + (-b).atan2(-a) / TAU;
     let C = a.hypot(b);
     let (aʹ, bʹ) = (a / C, b / C);
