@@ -1,7 +1,7 @@
 use cairo::*;
 use chrono::Offset;
 
-use crate::cairo::{ext::ContextExt, util::text_width};
+use crate::cairo::ext::ContextExt;
 use crate::fmt::num::Format;
 use crate::weather::render::iso3166::TABLE as ISO3166;
 
@@ -40,7 +40,7 @@ pub fn current(ctx: &Context, weather: &api::Onecall, loc: &api::geo::Location) 
   ctx.show_text(" ")?;
   util::cairo::set_font_variations(ctx, "opsz=18,wght=200")?;
   ctx.show_text(match country {
-    Some(&(_, country)) if text_width(ctx, &[city, " ", country])? < 200.0 => country,
+    Some(&(_, country)) if ctx.text_width(&[city, " ", country])? < 200.0 => country,
     _ => &loc.country,
   })?;
 

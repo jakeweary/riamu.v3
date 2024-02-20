@@ -1,14 +1,7 @@
 use cairo::*;
 
-pub fn text_width(ctx: &Context, parts: &[&str]) -> Result<f64> {
-  parts.iter().try_fold(0.0, |acc, part| {
-    let ext = ctx.text_extents(part)?;
-    Ok(acc + ext.x_advance())
-  })
-}
-
 pub fn resize(src: &ImageSurface, filter: Filter, w: i32, h: i32) -> Result<ImageSurface> {
-  let dst = ImageSurface::create(Format::ARgb32, w, h)?;
+  let dst = ImageSurface::create(src.format(), w, h)?;
   let ctx = Context::new(&dst)?;
 
   let pat = SurfacePattern::create(src);
