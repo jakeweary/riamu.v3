@@ -6,6 +6,10 @@ pub mod html;
 pub mod network;
 pub mod random;
 pub mod task;
+pub mod api {
+  pub mod _2ch;
+  pub mod _4chan;
+}
 pub mod cairo {
   pub mod blur;
   pub mod ext;

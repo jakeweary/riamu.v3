@@ -1,5 +1,7 @@
 use crate::client;
 
+mod _2ch;
+mod _4chan;
 mod deezer;
 mod download;
 mod imgur;
@@ -16,10 +18,6 @@ mod meta {
   pub mod shell;
   pub mod speed;
   pub mod speed_to_discord;
-}
-mod repost {
-  pub mod _2ch;
-  pub mod _4chan;
 }
 mod text {
   pub mod style;
@@ -70,10 +68,18 @@ pub fn build() -> client::Commands {
       "real" => random::real,
       "coin" => random::coin,
       "color" => random::color,
+      "2ch" => {
+        "post" => _2ch::random_post,
+        "file" => _2ch::random_file,
+      },
+      "4chan" => {
+        "post" => _4chan::random_post,
+        "file" => _4chan::random_file,
+      },
     },
     "repost" => {
-      "2ch" => repost::_2ch::run,
-      "4chan" => repost::_4chan::run,
+      "2ch" => _2ch::repost,
+      "4chan" => _4chan::repost,
     },
     "text" => {
       "style" => text::style::run,

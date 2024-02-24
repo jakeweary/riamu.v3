@@ -1,121 +1,46 @@
-use std::sync::OnceLock;
-
 use ego_tree::NodeRef;
-use lib::fmt::plural::Plural;
-use regex_lite::Regex;
 use scraper::{CaseSensitivity::*, Html, Node};
 use serde::Deserialize;
-use serenity::all::*;
-
-use crate::client::{err, Context, Result};
-
-#[macros::command(description = "Repost something from 2ch")]
-pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {
-  ctx.event.defer(ctx).await?;
-
-  tracing::debug!("parsing url…");
-  let Some((domain, board_id, thread_id, post_id)) = parse_url(url) else {
-    err::message!("failed to parse url");
-  };
-
-  tracing::debug!("fetching json…");
-  let json = Json::get(domain, board_id, thread_id).await?;
-  let thread = &json.threads[0];
-  let op = &thread.posts[0];
-  let post = match post_id {
-    Some(id) => thread.posts.iter().find(|p| p.id == id).unwrap(),
-    None => op,
-  };
-
-  #[rustfmt::skip]
-  let url = format!("https://{}/{}/res/{}.html#{}",
-    domain, board_id, thread_id, post_id.unwrap_or(op.id));
-
-  let replies = thread.find_replies_to(post.id).count().plural("reply", "replies");
-  let footer = format!("#{}/{} · {:#}", post.index, thread.posts.len(), replies);
-
-  let mut edit = EditInteractionResponse::new();
-  let embed = CreateEmbed::new()
-    .description(post.render(domain))
-    .author(CreateEmbedAuthor::new(&op.subject).url(&url))
-    .footer(CreateEmbedFooter::new(footer))
-    .timestamp(Timestamp::from_unix_timestamp(post.timestamp)?);
-
-  tracing::debug!("attaching files…");
-  for file in post.files.iter().flatten() {
-    let url = format!("https://{}{}", domain, file.path);
-    let att = CreateAttachment::url(ctx, &url).await?;
-    edit = edit.new_attachment(att);
-  }
-
-  tracing::debug!("sending response…");
-  if ctx.event.edit_response(ctx, edit.embed(embed)).await.is_err() {
-    err::message!("failed to send response, most likely files are too big");
-  }
-
-  Ok(())
-}
-
-// ---
 
 #[derive(Debug, Deserialize)]
-struct Json {
-  threads: Vec<Thread>,
+pub struct Threads {
+  pub threads: Vec<Thread>,
 }
 
 #[derive(Debug, Deserialize)]
-struct Thread {
-  posts: Vec<Post>,
+pub struct Thread {
+  pub posts: Vec<Post>,
 }
 
 #[derive(Debug, Deserialize)]
-struct Post {
+pub struct Post {
+  pub timestamp: u32,
   #[serde(rename = "num")]
-  id: i64,
-  #[serde(rename = "number")]
-  index: i64,
-  timestamp: i64,
-  subject: String,
-  comment: String,
-  files: Option<Vec<File>>,
+  pub id: u64,
+  pub subject: String,
+  pub comment: String,
+  pub files: Option<Vec<File>>,
 }
 
 #[derive(Debug, Deserialize)]
-struct File {
-  path: String,
-}
-
-// ---
-
-fn parse_url(url: &str) -> Option<(&str, &str, i64, Option<i64>)> {
-  static RE: OnceLock<Regex> = OnceLock::new();
-
-  let re = RE.get_or_init(|| {
-    let re = r"(?i-u)https?://([\w.]+)/(\w+)/res/(\d+)\.html(?:#(\d+))?";
-    Regex::new(re).unwrap()
-  });
-
-  let captures = re.captures(url)?;
-  let domain = captures.get(1).map(|b| b.as_str())?;
-  let board = captures.get(2).map(|b| b.as_str())?;
-  let thread = captures.get(3).and_then(|t| t.as_str().parse().ok())?;
-  let post = captures.get(4).and_then(|p| p.as_str().parse().ok());
-  Some((domain, board, thread, post))
-}
-
-impl Json {
-  async fn get(domain: &str, board: &str, thread: i64) -> reqwest::Result<Self> {
-    let url = format!("https://{domain}/{board}/res/{thread}.json");
-    tracing::debug!(%url);
-
-    let resp = reqwest::get(url).await?.error_for_status()?;
-    let json = resp.json().await?;
-    Ok(json)
-  }
+pub struct File {
+  pub path: String,
 }
 
 impl Thread {
-  fn find_replies_to(&self, id: i64) -> impl Iterator<Item = &Post> {
+  pub async fn get(domain: &str, board: &str, thread: u64) -> reqwest::Result<Self> {
+    let url = format!("https://{domain}/{board}/res/{thread}.json");
+    let resp = reqwest::get(url).await?.error_for_status()?;
+    let Threads { mut threads } = resp.json().await?;
+    Ok(threads.swap_remove(0))
+  }
+
+  pub fn get_post_by_id(&self, id: u64) -> Option<(&Post, usize)> {
+    let index = self.posts.binary_search_by_key(&id, |p| p.id).ok()?;
+    Some((&self.posts[index], index))
+  }
+
+  pub fn find_replies_to(&self, id: u64) -> impl Iterator<Item = &Post> {
     self.posts.iter().filter({
       let pat = format!("#{id}\"");
       move |&p| p.comment.contains(&pat)
@@ -124,7 +49,13 @@ impl Thread {
 }
 
 impl Post {
-  fn render(&self, domain: &str) -> String {
+  pub fn render(&self, domain: &str) -> String {
+    let mut acc = String::new();
+    self.render_to(&mut acc, domain);
+    acc
+  }
+
+  pub fn render_to(&self, acc: &mut String, domain: &str) {
     fn visit(acc: &mut String, domain: &str, node: NodeRef<'_, Node>) {
       for node in node.children() {
         match node.value() {
@@ -207,9 +138,6 @@ impl Post {
 
     let html = Html::parse_fragment(&self.comment);
     let root = html.tree.root();
-
-    let mut acc = String::new();
-    visit(&mut acc, domain, root);
-    acc
+    visit(acc, domain, root);
   }
 }

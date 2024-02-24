@@ -3,15 +3,21 @@ use std::borrow::Cow;
 pub mod num;
 pub mod plural;
 
-pub fn ellipsis(text: &str, len: usize) -> Cow<'_, str> {
-  if len == 0 {
-    return Cow::Borrowed(&text[..0]);
+pub fn ellipsis(text: &str, max_len: usize) -> Cow<'_, str> {
+  let mut indices = text.char_indices().skip(max_len - 1);
+  match (indices.next(), indices.next()) {
+    (Some((i, _)), Some(_)) => Cow::Owned(format!("{}…", &text[..i])),
+    _ => Cow::Borrowed(text),
   }
-  let mut indices = text.char_indices().skip(len - 1);
-  if let (Some((i, _)), Some(_)) = (indices.next(), indices.next()) {
-    return Cow::Owned(format!("{}…", &text[..i]));
+}
+
+pub fn line_ellipsis(text: &str, max_lines: usize) -> Cow<'_, str> {
+  let newlines = text.bytes().enumerate().filter(|&(_, b)| b == b'\n');
+  let mut indices = newlines.map(|(i, _)| i).skip(max_lines - 2);
+  match (indices.next(), indices.next()) {
+    (Some(i), Some(_)) => Cow::Owned(format!("{}\n…", &text[..i])),
+    _ => Cow::Borrowed(text),
   }
-  Cow::Borrowed(text)
 }
 
 pub fn duration(s: u64) -> String {
@@ -60,9 +66,6 @@ mod tests {
 
   #[test]
   fn test_ellipsis() {
-    assert_eq!(ellipsis("", 0), "");
-    assert_eq!(ellipsis("1", 0), "");
-
     assert_eq!(ellipsis("", 1), "");
     assert_eq!(ellipsis("1", 1), "1");
     assert_eq!(ellipsis("12", 1), "…");
