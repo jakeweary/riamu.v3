@@ -11,11 +11,11 @@ use serenity::all::*;
 use crate::client::{err, Context, Result};
 use crate::db::statuses;
 
-#[macros::command(description = "Show one month of someone's status history")]
+#[macros::command(desc = "Show one month of someone's status history")]
 pub async fn run(
   ctx: &Context<'_>,
-  #[description = "The user of interest"] user: &User,
-  #[description = "The time zone (UTC offset in hours or in ±HHMM format, e.g.: -7, +3, +0530, +1245)"] tz: i64,
+  #[desc = "The user of interest"] user: &User,
+  #[desc = "The time zone (UTC offset in hours or in ±HHMM format, e.g.: -7, +3, +0530, +1245)"] tz: i64,
 ) -> Result<()> {
   let Some(now) = tz_offset(tz as i32).and_then(now) else {
     err::message!("invalid UTC offset");

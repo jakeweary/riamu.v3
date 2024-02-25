@@ -6,12 +6,12 @@ use url::Url;
 
 use crate::client::{err, Context, Result};
 
-#[macros::command(description = "Look up a term on Wikipedia (english lang.)")]
+#[macros::command(desc = "Look up a term on Wikipedia (english lang.)")]
 pub async fn en(ctx: &Context<'_>, term: &str) -> Result<()> {
   lookup(ctx, term, "en").await
 }
 
-#[macros::command(description = "Look up a term on Wikipedia (russian lang.)")]
+#[macros::command(desc = "Look up a term on Wikipedia (russian lang.)")]
 pub async fn ru(ctx: &Context<'_>, term: &str) -> Result<()> {
   lookup(ctx, term, "ru").await
 }

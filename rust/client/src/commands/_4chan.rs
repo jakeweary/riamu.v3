@@ -6,8 +6,8 @@ use serenity::all::*;
 
 use crate::client::{err, Context, Result};
 
-#[macros::command(description = "Repost something from 4chan")]
-pub async fn repost(ctx: &Context<'_>, #[description = "4chan thread url"] url: &str) -> Result<()> {
+#[macros::command(desc = "Repost something from 4chan")]
+pub async fn repost(ctx: &Context<'_>, #[desc = "4chan thread url"] url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("parsing url…");
@@ -22,8 +22,8 @@ pub async fn repost(ctx: &Context<'_>, #[description = "4chan thread url"] url: 
   reply(ctx, domain, board_id, post_id, &thread).await
 }
 
-#[macros::command(description = "Random 4chan post")]
-pub async fn random_post(ctx: &Context<'_>, #[description = "4chan board id"] board: &str) -> Result<()> {
+#[macros::command(desc = "Random 4chan post")]
+pub async fn random_post(ctx: &Context<'_>, #[desc = "4chan board id"] board: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("getting catalog…");
@@ -37,8 +37,8 @@ pub async fn random_post(ctx: &Context<'_>, #[description = "4chan board id"] bo
   reply(ctx, "boards.4chan.org", board, post.id, &thread).await
 }
 
-#[macros::command(description = "Random 4chan post with a file attachment")]
-pub async fn random_file(ctx: &Context<'_>, #[description = "4chan board id"] board: &str) -> Result<()> {
+#[macros::command(desc = "Random 4chan post with a file attachment")]
+pub async fn random_file(ctx: &Context<'_>, #[desc = "4chan board id"] board: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("getting catalog…");

@@ -3,7 +3,7 @@ use serenity::all::*;
 
 use crate::client::{Context, Result};
 
-#[macros::command(description = "Random integer in [min, max) interval, defaults to [0, 100)")]
+#[macros::command(desc = "Random integer in [min, max) interval, defaults to [0, 100)")]
 pub async fn int(ctx: &Context<'_>, min: Option<i64>, max: Option<i64>) -> Result<()> {
   let (min, max) = (min.unwrap_or(0), max.unwrap_or(100));
   let n = thread_rng().gen_range(min..max);
@@ -11,7 +11,7 @@ pub async fn int(ctx: &Context<'_>, min: Option<i64>, max: Option<i64>) -> Resul
   reply(ctx, |msg| msg.content(text)).await
 }
 
-#[macros::command(description = "Random real number in [min, max) interval, defaults to [0, 1)")]
+#[macros::command(desc = "Random real number in [min, max) interval, defaults to [0, 1)")]
 pub async fn real(ctx: &Context<'_>, min: Option<f64>, max: Option<f64>) -> Result<()> {
   let (min, max) = (min.unwrap_or(0.0), max.unwrap_or(1.0));
   let n = thread_rng().gen_range(min..max);
@@ -19,14 +19,14 @@ pub async fn real(ctx: &Context<'_>, min: Option<f64>, max: Option<f64>) -> Resu
   reply(ctx, |msg| msg.content(text)).await
 }
 
-#[macros::command(description = "Toss a coin")]
+#[macros::command(desc = "Toss a coin")]
 pub async fn coin(ctx: &Context<'_>) -> Result<()> {
   let coin = if random() { "heads" } else { "tails" };
   let text = format!("# \u{1fa99} {}", coin);
   reply(ctx, |msg| msg.content(text)).await
 }
 
-#[macros::command(description = "Random color")]
+#[macros::command(desc = "Random color")]
 pub async fn color(ctx: &Context<'_>) -> Result<()> {
   let color = random::<u32>() & 0xffffff;
   let [b, g, r, _] = color.to_le_bytes();

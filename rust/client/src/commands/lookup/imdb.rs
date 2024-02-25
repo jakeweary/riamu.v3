@@ -10,7 +10,7 @@ use url::Url;
 
 use crate::client::{err, Context, Result};
 
-#[macros::command(description = "Look up a movie on IMDB")]
+#[macros::command(desc = "Look up a movie on IMDB")]
 pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

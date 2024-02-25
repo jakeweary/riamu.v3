@@ -9,7 +9,7 @@ use url::Url;
 
 use crate::client::{err, Context, Result};
 
-#[macros::command(description = "Look up a term on Urban Dictionary")]
+#[macros::command(desc = "Look up a term on Urban Dictionary")]
 pub async fn run(ctx: &Context<'_>, term: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

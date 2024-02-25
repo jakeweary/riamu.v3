@@ -10,7 +10,7 @@ use serenity::all::*;
 use crate::client::{Context, Result};
 use crate::db::{self, counters::Counter};
 
-#[macros::command(description = "Show some technical info about me")]
+#[macros::command(desc = "Show some technical info about me")]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
   let prev = KernelStats::current()?;
   let rtt = Instant::now();

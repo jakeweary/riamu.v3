@@ -8,7 +8,7 @@ use serenity::all::*;
 
 use crate::client::{err, Context, Result};
 
-#[macros::command(description = "Repost something from 2ch")]
+#[macros::command(desc = "Repost something from 2ch")]
 pub async fn repost(ctx: &Context<'_>, url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
@@ -24,8 +24,8 @@ pub async fn repost(ctx: &Context<'_>, url: &str) -> Result<()> {
   reply(ctx, domain, board_id, post_id, &thread).await
 }
 
-#[macros::command(description = "Random 2ch post")]
-pub async fn random_post(ctx: &Context<'_>, #[description = "2ch board id"] board: &str) -> Result<()> {
+#[macros::command(desc = "Random 2ch post")]
+pub async fn random_post(ctx: &Context<'_>, #[desc = "2ch board id"] board: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("getting catalog…");
@@ -39,8 +39,8 @@ pub async fn random_post(ctx: &Context<'_>, #[description = "2ch board id"] boar
   reply(ctx, "2ch.hk", board, post.id, &thread).await
 }
 
-#[macros::command(description = "Random 2ch post with a file attachment")]
-pub async fn random_file(ctx: &Context<'_>, #[description = "2ch board id"] board: &str) -> Result<()> {
+#[macros::command(desc = "Random 2ch post with a file attachment")]
+pub async fn random_file(ctx: &Context<'_>, #[desc = "2ch board id"] board: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("getting catalog…");

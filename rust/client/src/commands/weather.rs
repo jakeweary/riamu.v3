@@ -4,10 +4,10 @@ use serenity::all::*;
 
 use crate::client::{err, Context, Result};
 
-#[macros::command(description = "Weather forecast")]
+#[macros::command(desc = "Weather forecast")]
 pub async fn run(
   ctx: &Context<'_>,
-  #[description = "The city name, with an optional country code (e.g.: London, GB; Москва; 東京)"] location: &str,
+  #[desc = "The city name, with an optional country code (e.g.: London, GB; Москва; 東京)"] location: &str,
 ) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

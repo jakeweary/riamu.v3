@@ -10,13 +10,13 @@ use crate::util;
 struct FnArgs {
   #[darling(default)]
   owner_only: bool,
-  description: Option<String>,
+  desc: Option<String>,
 }
 
 #[derive(Debug, FromMeta)]
 struct FnInputArgs {
   name: Option<String>,
-  description: Option<String>,
+  desc: Option<String>,
 }
 
 pub fn expand(args: TokenStream, input: TokenStream) -> Result<TokenStream> {
@@ -25,7 +25,7 @@ pub fn expand(args: TokenStream, input: TokenStream) -> Result<TokenStream> {
   let meta_list = NestedMeta::parse_meta_list(args.into())?;
   let fn_args = FnArgs::from_list(&meta_list)?;
 
-  let cmd_description = util::option(fn_args.description);
+  let cmd_desc = util::option(fn_args.desc);
   let cmd_options = command_options(&mut function)?;
   let cmd_owner_only = fn_args.owner_only;
 
@@ -83,7 +83,7 @@ pub fn expand(args: TokenStream, input: TokenStream) -> Result<TokenStream> {
 
       Command {
         name,
-        description: #cmd_description,
+        description: #cmd_desc,
         owner_only: #cmd_owner_only,
 
         run,
@@ -115,13 +115,13 @@ fn command_options(function: &mut ItemFn) -> Result<Vec<proc_macro2::TokenStream
         Pat::Ident(ident) => ident.ident.to_string(),
         _ => unimplemented!(),
       });
-      let description = util::option(fn_input_args.description);
+      let desc = util::option(fn_input_args.desc);
       let ty = &*fn_input.ty;
 
       let option = quote! {
         CommandOption {
           name: #name,
-          description: #description,
+          description: #desc,
           choices: <#ty as CommandOptionTrait>::CHOICES,
           required: <#ty as CommandOptionTrait>::REQUIRED,
           ty: <#ty as CommandOptionTrait>::TYPE,

@@ -39,7 +39,7 @@ enum Style {
   SansSerifBoldItalic,
 }
 
-#[macros::command(description = "Text style")]
+#[macros::command(desc = "Text style")]
 pub async fn run(ctx: &Context<'_>, style: Style, input: &str) -> Result<()> {
   let f = match style {
     Style::Regional => style::regional_indicators,

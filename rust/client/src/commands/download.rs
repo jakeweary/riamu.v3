@@ -11,10 +11,10 @@ use url::Url;
 use crate::cache::Name;
 use crate::client::{err, Context, Result};
 
-#[macros::command(description = "Download a media file from YouTube, Twitch, Twitter, etc.")]
+#[macros::command(desc = "Download a media file from YouTube, Twitch, Twitter, etc.")]
 pub async fn run(
   ctx: &Context<'_>,
-  #[description = "A YouTube search query or a link to something"] query: &str,
+  #[desc = "A YouTube search query or a link to something"] query: &str,
 ) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

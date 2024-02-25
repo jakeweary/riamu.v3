@@ -10,7 +10,7 @@ use serenity::all::*;
 
 use crate::client::{Context, Result};
 
-#[macros::command(description = "Measure my connection speed to Discord servers")]
+#[macros::command(desc = "Measure my connection speed to Discord servers")]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

@@ -18,18 +18,15 @@ use url::Url;
 use crate::cache::Name;
 use crate::client::{err, Context, Result};
 
-#[macros::command(description = "Download a song from Deezer (tries to upload it directly to Discord)")]
-pub async fn as_file(
-  ctx: &Context<'_>,
-  #[description = "A search query or a Deezer/Spotify link"] query: &str,
-) -> Result<()> {
+#[macros::command(desc = "Download a song from Deezer (tries to upload it directly to Discord)")]
+pub async fn as_file(ctx: &Context<'_>, #[desc = "A search query or a Deezer/Spotify link"] query: &str) -> Result<()> {
   deezer(ctx, query, false).await
 }
 
-#[macros::command(description = "Download a song from Deezer (gives a direct link and a nice looking banner)")]
+#[macros::command(desc = "Download a song from Deezer (gives a direct link and a nice looking banner)")]
 pub async fn as_direct_link(
   ctx: &Context<'_>,
-  #[description = "A search query or a Deezer/Spotify link"] query: &str,
+  #[desc = "A search query or a Deezer/Spotify link"] query: &str,
 ) -> Result<()> {
   deezer(ctx, query, true).await
 }
