@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::sync::OnceLock;
 
-use regex_lite::Regex;
+use regex::Regex;
 
 pub mod colors;
 

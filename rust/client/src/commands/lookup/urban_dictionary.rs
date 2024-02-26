@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::sync::OnceLock;
 
 use chrono::DateTime;
-use regex_lite::{Captures, Regex};
+use regex::{Captures, Regex};
 use serde::Deserialize;
 use serenity::all::*;
 use url::Url;

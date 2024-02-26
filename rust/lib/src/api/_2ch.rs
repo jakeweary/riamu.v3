@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use regex_lite::Regex;
+use regex::Regex;
 
 pub mod catalog;
 pub mod thread;

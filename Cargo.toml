@@ -41,7 +41,7 @@ pyo3 = "*"
 rand = "*"
 rand_core = "*"
 rayon = "*"
-regex-lite = "*"
+regex = "*"
 reqwest = { version = "*", default-features = false }
 scraper = { version = "*", default-features = false }
 serde = "*"

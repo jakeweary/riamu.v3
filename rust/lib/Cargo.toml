@@ -14,7 +14,7 @@ ego-tree.workspace = true
 futures.workspace = true
 rand.workspace = true
 rand_core.workspace = true
-regex-lite.workspace = true
+regex.workspace = true
 reqwest = { workspace = true, features = ["default-tls", "json", "stream"] }
 scraper.workspace = true
 serde = { workspace = true, features = ["derive"] }

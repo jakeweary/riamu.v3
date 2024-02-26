@@ -1,4 +1,4 @@
-use lib::api::_4chan::parse_url;
+use lib::api::_4chan::{catalog, parse_url};
 use lib::api::_4chan::{catalog::Catalog, thread::Thread};
 use lib::fmt::plural::Plural;
 use lib::{fmt, html};
@@ -23,12 +23,18 @@ pub async fn repost(ctx: &Context<'_>, #[desc = "4chan thread url"] url: &str) -
 }
 
 #[macros::command(desc = "Random 4chan post")]
-pub async fn random_post(ctx: &Context<'_>, #[desc = "4chan board id"] board: &str) -> Result<()> {
+pub async fn random_post(
+  ctx: &Context<'_>,
+  #[desc = "4chan board id"] board: &str,
+  #[desc = "Only threads where subject matches this regex"] include: Option<&str>,
+  #[desc = "Only threads where subject doesn't match this regex"] exclude: Option<&str>,
+) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("getting catalog…");
   let catalog = Catalog::get(board).await?;
-  let (thread, post_index) = catalog.random(|t| 1 + t.replies as usize);
+  let filter = catalog::thread_filter(include, exclude)?;
+  let (thread, post_index) = catalog.random(filter, |t| 1 + t.replies as usize).unwrap();
 
   tracing::debug!("getting thread…");
   let thread = Thread::get(board, thread.id).await?;
@@ -37,13 +43,19 @@ pub async fn random_post(ctx: &Context<'_>, #[desc = "4chan board id"] board: &s
   reply(ctx, "boards.4chan.org", board, post.id, &thread).await
 }
 
-#[macros::command(desc = "Random 4chan post with a file attachment")]
-pub async fn random_file(ctx: &Context<'_>, #[desc = "4chan board id"] board: &str) -> Result<()> {
+#[macros::command(desc = "Random 4chan post with a media file attachment")]
+pub async fn random_post_with_attachment(
+  ctx: &Context<'_>,
+  #[desc = "4chan board id"] board: &str,
+  #[desc = "Only threads where subject matches this regex"] include: Option<&str>,
+  #[desc = "Only threads where subject doesn't match this regex"] exclude: Option<&str>,
+) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("getting catalog…");
   let catalog = Catalog::get(board).await?;
-  let (thread, file_index) = catalog.random(|t| 1 + t.images as usize);
+  let filter = catalog::thread_filter(include, exclude)?;
+  let (thread, file_index) = catalog.random(filter, |t| 1 + t.images as usize).unwrap();
 
   tracing::debug!("getting thread…");
   let thread = Thread::get(board, thread.id).await?;

@@ -70,11 +70,11 @@ pub fn build() -> client::Commands {
       "color" => random::color,
       "2ch" => {
         "post" => _2ch::random_post,
-        "file" => _2ch::random_file,
+        "post-with-attachments" => _2ch::random_post_with_attachments,
       },
       "4chan" => {
         "post" => _4chan::random_post,
-        "file" => _4chan::random_file,
+        "post-with-attachment" => _4chan::random_post_with_attachment,
       },
     },
     "repost" => {
