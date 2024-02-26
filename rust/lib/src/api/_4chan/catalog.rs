@@ -57,6 +57,12 @@ impl Catalog {
     let thread_total = weight(&thread);
     let thread_index = board_index + thread_total - board_subtotal;
 
+    tracing::debug! {
+      "random pick: #{}/{} (#{}/{})",
+      1 + board_index, board_total,
+      1 + thread_index, thread_total,
+    }
+
     Some((thread, thread_index))
   }
 }
