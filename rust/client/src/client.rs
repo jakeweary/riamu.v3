@@ -221,35 +221,22 @@ impl Client {
     Ok(())
   }
 
-  async fn register_commands(&self, ctx: serenity::Context) -> serenity::Result<()> {
+  async fn register_commands(&self, ctx: &serenity::Context) -> serenity::Result<()> {
     let commands = commands::serialize(&self.commands);
-    let commands = serenity::Command::set_global_commands(&ctx, commands).await?;
+    let commands = serenity::Command::set_global_commands(ctx, commands).await?;
     tracing::debug!("registered {} global commands", commands.len());
 
     let guild = self.env.discord_dev_server;
     let commands = Default::default();
-    let commands = guild.set_commands(&ctx, commands).await?;
+    let commands = guild.set_commands(ctx, commands).await?;
     tracing::debug!("registered {} guild-local commands", commands.len());
 
     Ok(())
   }
 
-  async fn on_ready(&self, ctx: serenity::Context, ready: serenity::Ready) -> serenity::Result<()> {
-    let (r#as, id) = (ready.user.tag(), ready.user.id.get());
-    tracing::info!(%r#as, id, "connected");
-    self.register_commands(ctx).await
-  }
+  async fn track_event(&self, event: &serenity::Event) -> Result<()> {
+    use serenity::*;
 
-  async fn on_command(&self, ctx: serenity::Context, cmd: serenity::CommandInteraction) -> serenity::Result<()> {
-    let ctx = Context::new(self, &ctx, &cmd);
-    self.handle_command(ctx).await
-  }
-
-  async fn on_message(&self, _ctx: serenity::Context, _msg: serenity::Message) -> Result<()> {
-    Ok(())
-  }
-
-  async fn on_event(&self, ctx: serenity::Context, event: serenity::Event) -> Result<()> {
     let mut messages = 0;
     let mut commands = 0;
 
@@ -257,59 +244,78 @@ impl Client {
     let mut user_name = None;
     let mut user_status = None;
 
-    let handle_event_res = async {
-      use serenity::*;
-
-      match event {
-        Event::Ready(ReadyEvent { ready, .. }) => {
-          self.on_ready(ctx, ready).await?;
-        }
-        Event::InteractionCreate(InteractionCreateEvent {
-          interaction: Interaction::Command(command),
-          ..
-        }) => {
-          commands += 1;
-          user_id = Some(command.user.id);
-          user_name = Some(command.user.name.clone());
-          self.on_command(ctx, command).await?;
-        }
-        Event::MessageCreate(MessageCreateEvent { message, .. }) => {
-          messages += 1;
-          user_id = Some(message.author.id);
-          user_name = Some(message.author.name.clone());
-          self.on_message(ctx, message).await?;
-        }
-        Event::PresenceUpdate(PresenceUpdateEvent { presence, .. }) => {
-          user_id = Some(presence.user.id);
-          user_name = presence.user.name.clone();
-          user_status = Some(presence.into());
-        }
-        _ => {}
+    match event {
+      Event::InteractionCreate(InteractionCreateEvent {
+        interaction: Interaction::Command(command),
+        ..
+      }) => {
+        commands += 1;
+        user_id = Some(command.user.id);
+        user_name = Some(command.user.name.clone());
       }
-
-      self::Result::Ok(())
+      Event::MessageCreate(MessageCreateEvent { message, .. }) => {
+        messages += 1;
+        user_id = Some(message.author.id);
+        user_name = Some(message.author.name.clone());
+      }
+      Event::PresenceUpdate(PresenceUpdateEvent { presence, .. }) => {
+        user_id = Some(presence.user.id);
+        user_name = presence.user.name.clone();
+        user_status = Some(presence.into());
+      }
+      _ => {}
     }
-    .await;
 
-    let handle_db_res = async {
-      let pairs = [("events", 1), ("messages", messages), ("commands", commands)];
-      db::counters::increment(&self.db, &pairs).await?;
+    let pairs = [("events", 1), ("messages", messages), ("commands", commands)];
+    db::counters::increment(&self.db, &pairs).await?;
 
-      if let Some(uid) = user_id {
-        db::users::upsert(&self.db, uid, user_name, messages, commands).await?;
-      }
-
-      if let (Some(uid), Some(status)) = (user_id, user_status) {
-        db::statuses::insert(&self.db, uid, status).await?;
-      }
-
-      self::Result::Ok(())
+    if let Some(uid) = user_id {
+      db::users::upsert(&self.db, uid, user_name, messages, commands).await?;
     }
-    .await;
 
-    handle_event_res?;
-    handle_db_res?;
+    if let (Some(uid), Some(status)) = (user_id, user_status) {
+      db::statuses::insert(&self.db, uid, status).await?;
+    }
 
+    Ok(())
+  }
+
+  async fn on_event(&self, ctx: &serenity::Context, event: &serenity::Event) -> Result<()> {
+    use serenity::*;
+
+    self.track_event(event).await?;
+
+    match event {
+      Event::Ready(ReadyEvent { ready, .. }) => {
+        self.on_ready(ctx, ready).await?;
+      }
+      Event::MessageCreate(MessageCreateEvent { message, .. }) => {
+        self.on_message(ctx, message).await?;
+      }
+      Event::InteractionCreate(InteractionCreateEvent {
+        interaction: Interaction::Command(command),
+        ..
+      }) => {
+        self.on_command(ctx, command).await?;
+      }
+      _ => {}
+    }
+
+    Ok(())
+  }
+
+  async fn on_ready(&self, ctx: &serenity::Context, ready: &serenity::Ready) -> serenity::Result<()> {
+    let (r#as, id) = (ready.user.tag(), ready.user.id.get());
+    tracing::info!(%r#as, id, "connected");
+    self.register_commands(ctx).await
+  }
+
+  async fn on_command(&self, ctx: &serenity::Context, cmd: &serenity::CommandInteraction) -> serenity::Result<()> {
+    let ctx = Context::new(self, ctx, cmd);
+    self.handle_command(ctx).await
+  }
+
+  async fn on_message(&self, _ctx: &serenity::Context, _msg: &serenity::Message) -> Result<()> {
     Ok(())
   }
 }
@@ -317,7 +323,7 @@ impl Client {
 #[serenity::async_trait]
 impl serenity::RawEventHandler for Client {
   async fn raw_event(&self, ctx: serenity::Context, event: serenity::Event) {
-    if let Err(err) = self.on_event(ctx, event).await {
+    if let Err(err) = self.on_event(&ctx, &event).await {
       tracing::error!(display=%err, debug=?err, "unhandled error while event handling");
     }
   }

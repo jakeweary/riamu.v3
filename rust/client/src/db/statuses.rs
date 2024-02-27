@@ -90,9 +90,9 @@ impl From<Packed> for Status {
   }
 }
 
-impl From<Presence> for Status {
-  fn from(p: Presence) -> Self {
-    let (desktop, mobile, web) = match p.client_status {
+impl From<&Presence> for Status {
+  fn from(p: &Presence) -> Self {
+    let (desktop, mobile, web) = match &p.client_status {
       Some(s) => (s.desktop, s.mobile, s.web),
       None => Default::default(),
     };
