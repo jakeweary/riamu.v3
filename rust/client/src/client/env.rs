@@ -55,5 +55,6 @@ impl_env! {
   SPOTIFY_APP_SECRET => spotify_app_secret;
   IMGUR_APP_ID => imgur_app_id;
   IMGUR_APP_SECRET => imgur_app_secret;
+  OMDB_API_KEY => omdb_api_key;
   OPENWEATHERMAP_API_KEY => openweathermap_api_key;
 }

@@ -10,6 +10,7 @@ mod tiktok;
 mod weather;
 mod lookup {
   pub mod imdb;
+  pub mod omdb;
   pub mod urban_dictionary;
   pub mod wikipedia;
 }
@@ -49,6 +50,7 @@ pub fn build() -> client::Commands {
     "weather" => weather::run,
     "lookup" => {
       "imdb" => lookup::imdb::run,
+      "omdb" => lookup::omdb::run,
       "wikipedia" => {
         "en" => lookup::wikipedia::en,
         "ru" => lookup::wikipedia::ru,
