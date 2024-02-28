@@ -7,8 +7,9 @@ pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("fetching json…");
-  let Ok(Some(json)) = imdb::query(&movie).await else {
-    err::message!("could not find anything");
+  let json = match imdb::query(&movie).await {
+    Ok(Some(html)) => imdb::extract_json(&html)?,
+    _ => err::message!("could not find anything"),
   };
 
   tracing::debug!("sending response…");
@@ -92,7 +93,7 @@ mod imdb {
 
   // ---
 
-  pub async fn query(movie: &str) -> Result<Option<Response>> {
+  pub async fn query(movie: &str) -> reqwest::Result<Option<String>> {
     const ACCEPT_LANGUAGE: HeaderValue = HeaderValue::from_static("en");
 
     let headers = HeaderMap::from_iter([(header::ACCEPT_LANGUAGE, ACCEPT_LANGUAGE)]);
@@ -114,12 +115,14 @@ mod imdb {
     let res = req.send().await?.error_for_status()?;
     let html = res.text().await?;
 
-    let html = Html::parse_document(&html);
+    Ok(Some(html))
+  }
+
+  pub fn extract_json(html: &str) -> serde_json::Result<Response> {
+    let html = Html::parse_document(html);
     let select = Selector::parse(r#"script[type="application/ld+json"]"#).unwrap();
     let json = html.select(&select).flat_map(|e| e.text()).next().unwrap();
-    let json = serde_json::from_str(json)?;
-
-    Ok(json)
+    serde_json::from_str(json)
   }
 
   impl Response {

@@ -1,4 +1,4 @@
-use std::f32::consts::TAU;
+use std::f32::consts::TAU as τ;
 use std::{iter, slice};
 
 use cairo::*;
@@ -6,7 +6,7 @@ use cairo::*;
 use crate::color::srgb::f32_to_srgb8_v2 as srgb_oetf;
 use crate::color::srgb::srgb8_to_f32 as srgb_eotf;
 
-pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
+pub fn gaussian_blur(srf: &mut ImageSurface, σ: f32) -> Result<()> {
   assert_eq!(srf.format(), Format::Rgb24);
 
   let width = srf.width();
@@ -19,10 +19,10 @@ pub fn gaussian_blur(srf: &mut ImageSurface, sigma: f32) -> Result<()> {
 
   // https://desmos.com/calculator/st8xmj1ig7
   let scale = 4.0;
-  let radius = (scale * sigma).ceil() as i32;
+  let radius = (scale * σ).ceil() as i32;
   let gauss = {
-    let k0 = 1.0 / (sigma * TAU.sqrt());
-    let k1 = 0.5 / (sigma * sigma);
+    let k0 = 1.0 / (σ * τ.sqrt());
+    let k1 = 0.5 / (σ * σ);
     let f = |x: f32| k0 * (-k1 * x * x).exp();
     let lut: Vec<_> = (0..=radius).map(|i| f(i as f32)).collect();
     move |x: i32| unsafe { *lut.get_unchecked(x.unsigned_abs() as usize) }
