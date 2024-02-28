@@ -1,12 +1,4 @@
-use std::borrow::Cow;
-use std::fmt::{self, Write};
-use std::result::Result as StdResult;
-
-use lib::fmt::num::Format;
-use scraper::{Html, Selector};
-use serde::Deserialize;
 use serenity::all::*;
-use url::Url;
 
 use crate::client::{err, Context, Result};
 
@@ -14,15 +6,10 @@ use crate::client::{err, Context, Result};
 pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
-  tracing::debug!("searching…");
-  let json = Search::search(movie).await?;
-
-  let Some(movie) = json.list.iter().find(|sr| sr.id.starts_with("tt")) else {
+  tracing::debug!("fetching json…");
+  let Ok(Some(json)) = imdb::query(&movie).await else {
     err::message!("could not find anything");
   };
-
-  tracing::debug!("fetching json…");
-  let json = Json::get(&movie.id).await?;
 
   tracing::debug!("sending response…");
   let edit = EditInteractionResponse::new().embed(json.embed());
@@ -31,154 +18,170 @@ pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   Ok(())
 }
 
-// ---
+mod imdb {
+  use std::borrow::Cow;
+  use std::fmt::{self, Write};
+  use std::result::Result as StdResult;
 
-#[derive(Debug, Deserialize)]
-struct Search {
-  #[serde(rename = "d")]
-  list: Vec<SearchResult>,
-}
+  use lib::fmt::num::Format;
+  use reqwest::header::{self, HeaderMap, HeaderValue};
+  use scraper::{Html, Selector};
+  use serde::Deserialize;
+  use serenity::all::*;
+  use url::Url;
 
-#[derive(Debug, Deserialize)]
-struct SearchResult {
-  id: String,
-}
+  // ---
 
-// ---
+  #[derive(Debug, Deserialize)]
+  #[serde(rename_all = "camelCase")]
+  pub struct Response {
+    pub url: String,
+    pub name: String,
+    pub description: String,
+    #[serde(default)]
+    pub director: Vec<Director>,
+    #[serde(default)]
+    pub creator: Vec<Creator>,
+    #[serde(default)]
+    pub actor: Vec<Actor>,
+    pub genre: Vec<String>,
+    pub image: Option<String>,
+    pub duration: Option<String>,
+    pub date_published: Option<String>,
+    pub aggregate_rating: Option<AggregateRating>,
+  }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Json {
-  url: String,
-  name: String,
-  description: String,
-  #[serde(default)]
-  director: Vec<Director>,
-  #[serde(default)]
-  creator: Vec<Creator>,
-  #[serde(default)]
-  actor: Vec<Actor>,
-  genre: Vec<String>,
-  image: Option<String>,
-  duration: Option<String>,
-  date_published: Option<String>,
-  aggregate_rating: Option<AggregateRating>,
-}
+  #[derive(Debug, Deserialize)]
+  pub struct AggregateRating {
+    #[serde(rename = "ratingCount")]
+    pub count: i64,
+    #[serde(rename = "ratingValue")]
+    pub value: f64,
+  }
 
-#[derive(Debug, Deserialize)]
-struct AggregateRating {
-  #[serde(rename = "ratingCount")]
-  count: i64,
-  #[serde(rename = "ratingValue")]
-  value: f64,
-}
+  #[derive(Debug, Deserialize)]
+  pub struct Actor {
+    pub url: String,
+    pub name: String,
+  }
 
-#[derive(Debug, Deserialize)]
-struct Actor {
-  url: String,
-  name: String,
-}
+  #[derive(Debug, Deserialize)]
+  pub struct Director {
+    pub url: String,
+    pub name: String,
+  }
 
-#[derive(Debug, Deserialize)]
-struct Director {
-  url: String,
-  name: String,
-}
+  #[derive(Debug, Deserialize)]
+  pub struct Creator {
+    pub url: String,
+    pub name: Option<String>,
+  }
 
-#[derive(Debug, Deserialize)]
-struct Creator {
-  url: String,
-  name: Option<String>,
-}
+  // ---
 
-// ---
+  #[derive(Debug, Deserialize)]
+  struct Search {
+    #[serde(rename = "d")]
+    list: Vec<SearchResult>,
+  }
 
-impl Search {
-  async fn search(movie: &str) -> reqwest::Result<Self> {
+  #[derive(Debug, Deserialize)]
+  struct SearchResult {
+    id: String,
+  }
+
+  // ---
+
+  pub async fn query(movie: &str) -> Result<Option<Response>> {
+    const ACCEPT_LANGUAGE: HeaderValue = HeaderValue::from_static("en");
+
+    let headers = HeaderMap::from_iter([(header::ACCEPT_LANGUAGE, ACCEPT_LANGUAGE)]);
+    let client = reqwest::Client::builder().default_headers(headers).build()?;
+
     let url = "https://v2.sg.media-imdb.com/suggestion/h";
     let mut url = Url::parse(url).unwrap();
     url.path_segments_mut().unwrap().push(&format!("{}.json", movie));
-    tracing::debug!(%url);
+    let req = client.get(url);
+    let res = req.send().await?.error_for_status()?;
+    let json: Search = res.json().await?;
 
-    let resp = reqwest::get(url).await?.error_for_status()?;
-    let json = resp.json().await?;
-    Ok(json)
-  }
-}
+    let Some(movie) = json.list.iter().find(|sr| sr.id.starts_with("tt")) else {
+      return Ok(None);
+    };
 
-impl Json {
-  async fn get(id: &str) -> Result<Self> {
-    let url = format!("https://www.imdb.com/title/{}", id);
-    tracing::debug!(%url);
-
-    let resp = reqwest::get(url).await?.error_for_status()?;
-    let html = resp.text().await?;
+    let url = format!("https://www.imdb.com/title/{}", movie.id);
+    let req = client.get(url);
+    let res = req.send().await?.error_for_status()?;
+    let html = res.text().await?;
 
     let html = Html::parse_document(&html);
     let select = Selector::parse(r#"script[type="application/ld+json"]"#).unwrap();
     let json = html.select(&select).flat_map(|e| e.text()).next().unwrap();
     let json = serde_json::from_str(json)?;
+
     Ok(json)
   }
 
-  fn embed(&self) -> CreateEmbed {
-    let title = lib::html::strip(&self.title());
-    let desc = lib::html::strip(&self.description().unwrap());
-    let embed = CreateEmbed::new().url(&self.url).title(title).description(desc);
+  impl Response {
+    pub fn embed(&self) -> CreateEmbed {
+      let title = lib::html::strip(&self.title());
+      let desc = lib::html::strip(&self.description().unwrap());
+      let embed = CreateEmbed::new().url(&self.url).title(title).description(desc);
 
-    match &self.image {
-      Some(url) => embed.thumbnail(url),
-      None => embed,
-    }
-  }
-
-  fn title(&self) -> Cow<'_, str> {
-    match self.date_published.as_ref().and_then(|date| date.split_once('-')) {
-      Some((year, _)) => Cow::Owned(format!("{} ({})", self.name, year)),
-      None => Cow::Borrowed(&self.name),
-    }
-  }
-
-  fn description(&self) -> StdResult<String, fmt::Error> {
-    let mut acc = String::new();
-
-    let directors = self.director.iter();
-    let writers = self.creator.iter().filter_map(|c| Some((c.name.as_ref()?, &c.url)));
-    let stars = self.actor.iter();
-
-    writeln!(acc, "{}", self.description)?;
-
-    for (i, director) in directors.enumerate() {
-      let sep = if i == 0 { "\nDirectors: " } else { ", " };
-      write!(acc, "{}[{}]({})", sep, director.name, director.url)?;
+      match &self.image {
+        Some(url) => embed.thumbnail(url),
+        None => embed,
+      }
     }
 
-    for (i, (name, url)) in writers.enumerate() {
-      let sep = if i == 0 { "\nWriters: " } else { ", " };
-      write!(acc, "{}[{}]({})", sep, name, url)?;
+    fn title(&self) -> Cow<'_, str> {
+      match self.date_published.as_ref().and_then(|date| date.split_once('-')) {
+        Some((year, _)) => Cow::Owned(format!("{} ({})", self.name, year)),
+        None => Cow::Borrowed(&self.name),
+      }
     }
 
-    for (i, star) in stars.enumerate() {
-      let sep = if i == 0 { "\nStars: " } else { ", " };
-      write!(acc, "{}[{}]({})", sep, star.name, star.url)?;
+    fn description(&self) -> StdResult<String, fmt::Error> {
+      let mut acc = String::new();
+
+      let directors = self.director.iter();
+      let writers = self.creator.iter().filter_map(|c| Some((c.name.as_ref()?, &c.url)));
+      let stars = self.actor.iter();
+
+      writeln!(acc, "{}", self.description)?;
+
+      for (i, director) in directors.enumerate() {
+        let sep = if i == 0 { "\nDirectors: " } else { ", " };
+        write!(acc, "{}[{}]({})", sep, director.name, director.url)?;
+      }
+
+      for (i, (name, url)) in writers.enumerate() {
+        let sep = if i == 0 { "\nWriters: " } else { ", " };
+        write!(acc, "{}[{}]({})", sep, name, url)?;
+      }
+
+      for (i, star) in stars.enumerate() {
+        let sep = if i == 0 { "\nStars: " } else { ", " };
+        write!(acc, "{}[{}]({})", sep, star.name, star.url)?;
+      }
+
+      write!(acc, "\n\n")?;
+
+      if let Some(rating) = &self.aggregate_rating {
+        write!(acc, "{}/10 ({}) · ", rating.value, rating.count.k())?;
+      }
+
+      if let Some(dur) = &self.duration {
+        let dur = dur.trim_start_matches("PT").to_ascii_lowercase();
+        write!(acc, "{} · ", dur)?;
+      }
+
+      for (i, genre) in self.genre.iter().enumerate() {
+        let sep = if i == 0 { "" } else { ", " };
+        write!(acc, "{}{}", sep, genre)?;
+      }
+
+      Ok(acc)
     }
-
-    write!(acc, "\n\n")?;
-
-    if let Some(rating) = &self.aggregate_rating {
-      write!(acc, "{}/10 ({}) · ", rating.value, rating.count.k())?;
-    }
-
-    if let Some(dur) = &self.duration {
-      let dur = dur.trim_start_matches("PT").to_ascii_lowercase();
-      write!(acc, "{} · ", dur)?;
-    }
-
-    for (i, genre) in self.genre.iter().enumerate() {
-      let sep = if i == 0 { "" } else { ", " };
-      write!(acc, "{}{}", sep, genre)?;
-    }
-
-    Ok(acc)
   }
 }
