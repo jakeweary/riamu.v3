@@ -5,6 +5,7 @@ pub mod gcra;
 pub mod html;
 pub mod network;
 pub mod random;
+pub mod regex;
 pub mod task;
 pub mod api {
   pub mod _2ch;

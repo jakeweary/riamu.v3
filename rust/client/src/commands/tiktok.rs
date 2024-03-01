@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use futures::StreamExt;
+use lib::discord::link::{LinkName, LinkUrl};
 use lib::fmt::num::Format;
 use serde::Deserialize;
 use serde_json::json;
@@ -46,12 +47,13 @@ pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {
 
   let content = format! {
     "[TikTok](<https://tiktok.com/@{}/video/{}>) by [{}](<https://tiktok.com/@{}>)",
-    data.author.id, data.id, data.author.nickname, data.author.unique_id
+    data.author.id, data.id, LinkName(&data.author.nickname), data.author.unique_id
   };
 
   if fsize > ctx.filesize_limit().await? {
     tracing::debug!("caching…");
     let url = ctx.client.cache.store_file(fpath, Name::Keep).await?.unwrap();
+    let url = LinkUrl(url.as_str());
 
     let content = format!("{} \u{205D} [mp4]({}) {}B", content, url, fsize.iec());
     let edit = EditInteractionResponse::new()

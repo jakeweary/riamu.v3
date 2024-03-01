@@ -3,7 +3,9 @@ use std::time::Duration;
 use std::{fs, mem};
 
 use futures::StreamExt;
-use lib::{fmt, fmt::num::Format as F, task};
+use lib::discord::link::{Link, LinkEmbed};
+use lib::fmt::num::Format as _;
+use lib::{fmt, task};
 use python::lib::dl::{self, *};
 use serenity::all::*;
 use url::Url;
@@ -49,7 +51,7 @@ pub async fn run(
   let fsize = fpath.metadata()?.len();
   tracing::debug!(file = ?fname, "downloaded {}B", fsize.iec());
 
-  let content = format!("[{}](<{}>)", info.title, info.webpage_url);
+  let page_link = Link(&info.title, &info.webpage_url);
 
   if fsize > ctx.filesize_limit().await? {
     let fext = fpath.extension().and_then(|e| e.to_str()).unwrap();
@@ -64,7 +66,8 @@ pub async fn run(
       url.set_query(Some(&params))
     }
 
-    let content = format!("{} \u{205D} [{}]({}) {}B", content, fext, url, fsize.iec());
+    let file_link = LinkEmbed(fext, url.as_str());
+    let content = format!("{} \u{205D} {} {}B", page_link, file_link, fsize.iec());
     let edit = EditInteractionResponse::new()
       .components(Default::default()) // remove components
       .content(content);
@@ -75,7 +78,7 @@ pub async fn run(
     let attachment = CreateAttachment::path(&fpath).await?;
     let edit = EditInteractionResponse::new()
       .components(Default::default()) // remove components
-      .content(content)
+      .content(page_link.to_string())
       .new_attachment(attachment);
 
     tracing::debug!("uploading…");
