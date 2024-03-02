@@ -7,8 +7,8 @@ pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("fetching json…");
-  let api = omdb::Api::new(&ctx.client.env.omdb_api_key);
-  let omdb::Response::Success(json) = api.query(movie).await? else {
+  let api = api::Api::new(&ctx.client.env.omdb_api_key);
+  let api::Response::Success(json) = api.query(movie).await? else {
     err::message!("could not find anything");
   };
 
@@ -19,7 +19,7 @@ pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   Ok(())
 }
 
-mod omdb {
+mod api {
   use std::fmt::Write;
 
   use serde::Deserialize;
@@ -36,7 +36,7 @@ mod omdb {
     }
 
     pub async fn query(&self, title: &str) -> reqwest::Result<Response> {
-      let params = &[("apikey", &*self.key), ("t", title)];
+      let params = &[("apikey", self.key), ("t", title)];
       let url = "https://www.omdbapi.com";
       let url = Url::parse_with_params(url, params).unwrap();
       tracing::debug!(%url);
@@ -49,6 +49,7 @@ mod omdb {
 
   #[derive(Debug, Deserialize)]
   #[serde(rename_all = "PascalCase", untagged)]
+  #[allow(clippy::large_enum_variant)]
   pub enum Response {
     Error(Error),
     Success(Success),

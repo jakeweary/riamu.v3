@@ -13,7 +13,7 @@ pub async fn run(ctx: &Context<'_>, command: &str) -> Result<()> {
   let tempdir = tempfile::tempdir()?;
 
   let mut cmd = Command::new("bash");
-  cmd.current_dir(&tempdir).args(["-c", &command]);
+  cmd.current_dir(&tempdir).args(["-c", command]);
 
   tracing::debug!("running a command…");
   let output = task::spawn_blocking(move || cmd.output()).await??;

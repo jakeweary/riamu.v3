@@ -7,8 +7,8 @@ pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("fetching json…");
-  let json = match imdb::query(&movie).await {
-    Ok(Some(html)) => imdb::extract_json(&html)?,
+  let json = match api::query(movie).await {
+    Ok(Some(html)) => api::extract_json(&html)?,
     _ => err::message!("could not find anything"),
   };
 
@@ -19,12 +19,12 @@ pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   Ok(())
 }
 
-mod imdb {
+mod api {
   use std::borrow::Cow;
   use std::fmt::{self, Write};
 
   use lib::fmt::num::Format as _;
-  use reqwest::header::{self, HeaderMap, HeaderValue};
+  use reqwest::header;
   use scraper::{Html, Selector};
   use serde::Deserialize;
   use serenity::all::*;
@@ -93,10 +93,7 @@ mod imdb {
   // ---
 
   pub async fn query(movie: &str) -> reqwest::Result<Option<String>> {
-    const ACCEPT_LANGUAGE: HeaderValue = HeaderValue::from_static("en");
-
-    let headers = HeaderMap::from_iter([(header::ACCEPT_LANGUAGE, ACCEPT_LANGUAGE)]);
-    let client = reqwest::Client::builder().default_headers(headers).build()?;
+    let client = reqwest::Client::builder().build()?;
 
     let url = "https://v2.sg.media-imdb.com/suggestion/h";
     let mut url = Url::parse(url).unwrap();
@@ -110,7 +107,7 @@ mod imdb {
     };
 
     let url = format!("https://www.imdb.com/title/{}", movie.id);
-    let req = client.get(url);
+    let req = client.get(url).header(header::ACCEPT_LANGUAGE, "en");
     let res = req.send().await?.error_for_status()?;
     let html = res.text().await?;
 

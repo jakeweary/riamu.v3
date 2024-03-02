@@ -14,7 +14,7 @@ impl RegexExt for Regex {
     F: FnMut(&mut Formatter<'_>, Match<'_>) -> fmt::Result,
   {
     let mut last_match = 0;
-    for c in self.captures_iter(&input) {
+    for c in self.captures_iter(input) {
       let m = unsafe { c.get(0).unwrap_unchecked() };
       fmt.write_str(unsafe { input.get_unchecked(last_match..m.start()) })?;
       f(fmt, m)?;

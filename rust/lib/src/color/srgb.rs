@@ -214,7 +214,7 @@ mod tests {
   #[test]
   fn cast_one() {
     let a = &sRGB([4, 3, 2, 1]);
-    let b = <&u32>::cast_from(&a);
+    let b = <&u32>::cast_from(a);
     let c = <&sRGB<u8, 4>>::cast_from(b);
 
     assert_eq!(b, &0x01020304);

@@ -48,13 +48,13 @@ impl Catalog {
 
     let (thread, board_subtotal) = threads()
       .scan(0, |acc, thread| {
-        *acc += weight(&thread);
+        *acc += weight(thread);
         Some((thread, *acc))
       })
       .find(|&(_, acc)| board_index < acc)
       .unwrap();
 
-    let thread_total = weight(&thread);
+    let thread_total = weight(thread);
     let thread_index = board_index + thread_total - board_subtotal;
 
     tracing::debug! {

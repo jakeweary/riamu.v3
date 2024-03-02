@@ -76,7 +76,7 @@ async fn reply(ctx: &Context<'_>, domain: &str, board_id: &str, post_id: u64, th
   let title = Option::or(op.subject.as_deref(), op.comment.as_deref());
   let title = title.map(html::strip);
   let title = title.as_deref().unwrap_or("<no subject>");
-  let title = fmt::ellipsis(&title, 100);
+  let title = fmt::ellipsis(title, 100);
   let title = fmt::line_ellipsis(&title, 2);
 
   let content = post.render(&url.parse()?);
