@@ -1,4 +1,4 @@
-use std::fmt::{self, Display, Formatter, Write};
+use std::fmt::{self, Display, Formatter};
 use std::sync::OnceLock;
 
 use regex::Regex;
@@ -6,33 +6,25 @@ use regex::Regex;
 use crate::regex::RegexExt;
 
 pub struct Link<'a>(pub &'a str, pub &'a str);
-pub struct LinkEmbed<'a>(pub &'a str, pub &'a str);
-pub struct LinkName<'a>(pub &'a str);
-pub struct LinkUrl<'a>(pub &'a str);
+pub struct Embed<'a>(pub &'a str, pub &'a str);
+pub struct Name<'a>(pub &'a str);
+pub struct Url<'a>(pub &'a str);
 
 impl<'a> Display for Link<'a> {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     let Self(name, url) = *self;
-    f.write_char('[')?;
-    LinkName(name).fmt(f)?;
-    f.write_str("](<")?;
-    LinkUrl(url).fmt(f)?;
-    f.write_str(">)")
+    link_fmt(f, name, url, ["[", "](<", ">)"])
   }
 }
 
-impl<'a> Display for LinkEmbed<'a> {
+impl<'a> Display for Embed<'a> {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     let Self(name, url) = *self;
-    f.write_char('[')?;
-    LinkName(name).fmt(f)?;
-    f.write_str("](")?;
-    LinkUrl(url).fmt(f)?;
-    f.write_str(")")
+    link_fmt(f, name, url, ["[", "](", ")"])
   }
 }
 
-impl<'a> Display for LinkName<'a> {
+impl<'a> Display for Name<'a> {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     static RE: OnceLock<Regex> = OnceLock::new();
     let re = RE.get_or_init(|| Regex::new(r"(?i)https?://|\[|\]").unwrap());
@@ -42,7 +34,7 @@ impl<'a> Display for LinkName<'a> {
   }
 }
 
-impl<'a> Display for LinkUrl<'a> {
+impl<'a> Display for Url<'a> {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     static RE: OnceLock<Regex> = OnceLock::new();
     let re = RE.get_or_init(|| Regex::new(r"\(|\)").unwrap());
@@ -53,4 +45,13 @@ impl<'a> Display for LinkUrl<'a> {
       _ => Ok(()),
     })
   }
+}
+
+fn link_fmt(f: &mut Formatter<'_>, name: &str, url: &str, parts: [&str; 3]) -> fmt::Result {
+  let [p0, p1, p2] = parts;
+  f.write_str(p0)?;
+  Name(name).fmt(f)?;
+  f.write_str(p1)?;
+  Url(url).fmt(f)?;
+  f.write_str(p2)
 }

@@ -13,7 +13,7 @@ pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   };
 
   tracing::debug!("sending response…");
-  let edit = EditInteractionResponse::new().embed(json.embed());
+  let edit = EditInteractionResponse::new().embed(json.embed()?);
   ctx.event.edit_response(ctx, edit).await?;
 
   Ok(())
@@ -22,9 +22,8 @@ pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
 mod imdb {
   use std::borrow::Cow;
   use std::fmt::{self, Write};
-  use std::result::Result as StdResult;
 
-  use lib::fmt::num::Format;
+  use lib::fmt::num::Format as _;
   use reqwest::header::{self, HeaderMap, HeaderValue};
   use scraper::{Html, Selector};
   use serde::Deserialize;
@@ -126,14 +125,14 @@ mod imdb {
   }
 
   impl Response {
-    pub fn embed(&self) -> CreateEmbed {
+    pub fn embed(&self) -> Result<CreateEmbed, fmt::Error> {
       let title = lib::html::strip(&self.title());
-      let desc = lib::html::strip(&self.description().unwrap());
+      let desc = lib::html::strip(&self.description()?);
       let embed = CreateEmbed::new().url(&self.url).title(title).description(desc);
 
       match &self.image {
-        Some(url) => embed.thumbnail(url),
-        None => embed,
+        Some(url) => Ok(embed.thumbnail(url)),
+        None => Ok(embed),
       }
     }
 
@@ -144,7 +143,7 @@ mod imdb {
       }
     }
 
-    fn description(&self) -> StdResult<String, fmt::Error> {
+    fn description(&self) -> Result<String, fmt::Error> {
       let mut acc = String::new();
 
       let directors = self.director.iter();

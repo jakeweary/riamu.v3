@@ -2,7 +2,7 @@ use cairo::*;
 use chrono::Offset;
 
 use crate::cairo::ext::ContextExt;
-use crate::fmt::num::Format;
+use crate::fmt::num::Format as _;
 use crate::weather::render::iso3166::TABLE as ISO3166;
 
 use super::fmt::Num;

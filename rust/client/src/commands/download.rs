@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::{fs, mem};
 
 use futures::StreamExt;
-use lib::discord::link::{Link, LinkEmbed};
+use lib::discord::link::{self, Link};
 use lib::fmt::num::Format as _;
 use lib::{fmt, task};
 use python::lib::dl::{self, *};
@@ -66,7 +66,7 @@ pub async fn run(
       url.set_query(Some(&params))
     }
 
-    let file_link = LinkEmbed(fext, url.as_str());
+    let file_link = link::Embed(fext, url.as_str());
     let content = format!("{} \u{205D} {} {}B", page_link, file_link, fsize.iec());
     let edit = EditInteractionResponse::new()
       .components(Default::default()) // remove components

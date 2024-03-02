@@ -3,7 +3,7 @@ use std::result::Result as StdResult;
 use std::time::Instant;
 use std::{env, iter, process, str};
 
-use lib::fmt::num::Format;
+use lib::fmt::num::Format as _;
 use procfs::{process::*, *};
 use serenity::all::*;
 

@@ -3,7 +3,7 @@ use std::result::Result as StdResult;
 use std::time::Instant;
 
 use futures::StreamExt;
-use lib::fmt::num::Format;
+use lib::fmt::num::Format as _;
 use lib::random::xorshift64::XorShift64;
 use rand::prelude::*;
 use serenity::all::*;

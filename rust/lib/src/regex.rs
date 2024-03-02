@@ -5,13 +5,13 @@ use regex::{Match, Regex};
 pub trait RegexExt {
   fn replace_fmt<F>(&self, fmt: &mut Formatter<'_>, input: &str, f: F) -> fmt::Result
   where
-    F: Fn(&mut Formatter<'_>, Match<'_>) -> fmt::Result;
+    F: FnMut(&mut Formatter<'_>, Match<'_>) -> fmt::Result;
 }
 
 impl RegexExt for Regex {
-  fn replace_fmt<F>(&self, fmt: &mut Formatter<'_>, input: &str, f: F) -> fmt::Result
+  fn replace_fmt<F>(&self, fmt: &mut Formatter<'_>, input: &str, mut f: F) -> fmt::Result
   where
-    F: Fn(&mut Formatter<'_>, Match<'_>) -> fmt::Result,
+    F: FnMut(&mut Formatter<'_>, Match<'_>) -> fmt::Result,
   {
     let mut last_match = 0;
     for c in self.captures_iter(&input) {

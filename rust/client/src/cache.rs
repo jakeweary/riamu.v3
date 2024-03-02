@@ -8,7 +8,7 @@ use std::{fs, io};
 
 use filetime::FileTime;
 use inotify::{EventMask, Inotify, WatchMask};
-use lib::fmt::num::Format;
+use lib::fmt::num::Format as _;
 use lib::task;
 use lru::LruCache;
 use parking_lot::Mutex;

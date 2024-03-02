@@ -7,8 +7,8 @@ use cairo::glib;
 use futures::StreamExt;
 use lib::cairo::blur::gaussian_blur;
 use lib::cairo::ext::ContextExt;
-use lib::discord::link::{Link, LinkName};
-use lib::fmt::num::Format as NumFormat;
+use lib::discord::link::{self, Link};
+use lib::fmt::num::Format as _;
 use lib::{ffmpeg, fmt, task};
 use pangocairo::prelude::FontMapExt;
 use python::lib::dz;
@@ -95,7 +95,7 @@ async fn deezer(ctx: &Context<'_>, query: &str, with_banner: bool) -> Result<()>
     ctx.event.edit_response(ctx, edit).await?;
   } else {
     let content = {
-      let (artist, track) = (LinkName(&info.artist.name), LinkName(&info.title));
+      let (artist, track) = (link::Name(&info.artist.name), link::Name(&info.title));
       let (artist_id, track_id) = (info.artist.id, info.id);
       let mut acc = String::new();
       write!(acc, "[{}](<https://deezer.com/artist/{}>) \u{2013} ", artist, artist_id)?;
