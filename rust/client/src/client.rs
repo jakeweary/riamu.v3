@@ -7,8 +7,7 @@ use ::serenity::all as serenity;
 use futures::{FutureExt, TryFutureExt};
 use lib::discord::colors;
 use pyo3::{PyErr, Python};
-use tokio::signal;
-use tokio::signal::unix::{signal, *};
+use tokio::signal::{self, unix::*};
 
 use crate::cache::LruFileCache;
 use crate::db;

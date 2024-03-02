@@ -2,7 +2,7 @@ use std::path::Path;
 use std::{env, iter};
 
 use itertools::Itertools;
-use pyo3::{self, prelude::*, types::*};
+use pyo3::{prelude::*, types::*};
 
 const REDIRECT: &str = r#"
 import logging

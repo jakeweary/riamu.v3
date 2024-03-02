@@ -6,7 +6,6 @@ use chrono::prelude::*;
 
 use crate::color::srgb::sRGB;
 use crate::discord;
-use crate::weather::render::draw;
 
 use super::fmt::Num;
 use super::range::Range;
