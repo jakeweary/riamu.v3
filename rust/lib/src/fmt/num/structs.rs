@@ -59,7 +59,7 @@ pub struct Normalized {
 impl Display for Normalized {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     let p = self.precision.map_or(0, |p| f.precision().unwrap_or(p));
-    f.write_fmt(format_args!("{:.*}", p, self.number))
+    write!(f, "{:.*}", p, self.number)
   }
 }
 

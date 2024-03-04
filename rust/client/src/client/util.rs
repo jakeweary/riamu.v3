@@ -1,6 +1,6 @@
 use std::any::Any;
 use std::borrow::Cow;
-use std::fmt::{Display, Formatter, Result};
+use std::fmt::{self, Display, Formatter};
 
 use serenity::all::*;
 
@@ -8,21 +8,19 @@ pub struct SlashCommandDisplay<'a>(pub &'a CommandData);
 pub struct SlashCommandOptionsDisplay<'a>(pub &'a [CommandDataOption]);
 
 impl Display for SlashCommandDisplay<'_> {
-  fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     let name = &self.0.name;
     let options = SlashCommandOptionsDisplay(&self.0.options);
-    f.write_fmt(format_args!("/{name}{options}"))?;
-
-    Ok(())
+    write!(f, "/{name}{options}")
   }
 }
 
 impl Display for SlashCommandOptionsDisplay<'_> {
-  fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     use CommandDataOptionValue::*;
 
     for option in self.0 {
-      f.write_fmt(format_args!(" {}", option.name))?;
+      write!(f, " {}", option.name)?;
 
       match &option.value {
         SubCommand(options) | SubCommandGroup(options) => {
@@ -42,7 +40,7 @@ impl Display for SlashCommandOptionsDisplay<'_> {
             _ => unimplemented!(),
           };
 
-          f.write_fmt(format_args!(":{}", value))?;
+          write!(f, ":{}", value)?;
         }
       }
     }

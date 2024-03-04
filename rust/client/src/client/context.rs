@@ -74,7 +74,6 @@ pub struct Id(pub u64);
 
 impl Display for Id {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-    let mixed = splitmix64::mix(self.0);
-    f.write_fmt(format_args!("{:016X}", mixed))
+    write!(f, "{:016X}", splitmix64::mix(self.0))
   }
 }
