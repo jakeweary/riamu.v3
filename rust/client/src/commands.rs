@@ -47,6 +47,7 @@ pub fn build() -> client::Commands {
     },
 
     // other stuff
+    "8ball" => random::eightball,
     "weather" => weather::run,
     "lookup" => {
       "imdb" => lookup::imdb::run,

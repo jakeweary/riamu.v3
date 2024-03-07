@@ -35,6 +35,13 @@ pub async fn color(ctx: &Context<'_>) -> Result<()> {
   reply(ctx, |msg| msg.embed(embed)).await
 }
 
+#[macros::command(desc = "Ask the magic 8 ball")]
+pub async fn eightball(ctx: &Context<'_>, question: &str) -> Result<()> {
+  let answer = ANSWERS.choose(&mut thread_rng()).unwrap();
+  let text = format!("❔ {question}\n🎱 {answer}");
+  reply(ctx, |msg| msg.content(text)).await
+}
+
 // ---
 
 async fn reply<F>(ctx: &Context<'_>, f: F) -> Result<()>
@@ -47,3 +54,26 @@ where
   ctx.event.create_response(ctx, msg).await?;
   Ok(())
 }
+
+pub static ANSWERS: [&str; 20] = [
+  "It is certain.",
+  "It is decidedly so.",
+  "Without a doubt.",
+  "Yes — definitely.",
+  "You may rely on it.",
+  "As I see it, yes.",
+  "Most likely.",
+  "Outlook good.",
+  "Yes.",
+  "Signs point to yes.",
+  "Reply hazy, try again.",
+  "Ask again later.",
+  "Better not tell you now.",
+  "Cannot predict now.",
+  "Concentrate and ask again.",
+  "Don't count on it.",
+  "My reply is no.",
+  "My sources say no.",
+  "Outlook not so good.",
+  "Very doubtful.",
+];
