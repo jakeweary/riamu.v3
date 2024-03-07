@@ -1,28 +1,24 @@
+use std::fmt::Write;
+use std::mem;
+
 use rand::prelude::*;
 use serenity::all::*;
 
-use crate::client::{Context, Result};
+use crate::client::{err, Context, Result};
 
-#[macros::command(desc = "Random integer in [min, max) interval, defaults to [0, 100)")]
+#[macros::command(desc = "Random integer in [min, max] range, defaults to [1, 100]")]
 pub async fn int(ctx: &Context<'_>, min: Option<i64>, max: Option<i64>) -> Result<()> {
-  let (min, max) = (min.unwrap_or(0), max.unwrap_or(100));
-  let n = thread_rng().gen_range(min..max);
-  let text = format!("# {}", n);
+  let (min, max) = (min.unwrap_or(1), max.unwrap_or(100));
+  let n = thread_rng().gen_range(min..=max);
+  let text = format!("{}", n);
   reply(ctx, |msg| msg.content(text)).await
 }
 
-#[macros::command(desc = "Random real number in [min, max) interval, defaults to [0, 1)")]
+#[macros::command(desc = "Random real number in [min, max) range, defaults to [0, 1)")]
 pub async fn real(ctx: &Context<'_>, min: Option<f64>, max: Option<f64>) -> Result<()> {
   let (min, max) = (min.unwrap_or(0.0), max.unwrap_or(1.0));
   let n = thread_rng().gen_range(min..max);
-  let text = format!("# {}", n);
-  reply(ctx, |msg| msg.content(text)).await
-}
-
-#[macros::command(desc = "Toss a coin")]
-pub async fn coin(ctx: &Context<'_>) -> Result<()> {
-  let coin = if random() { "heads" } else { "tails" };
-  let text = format!("# \u{1fa99} {}", coin);
+  let text = format!("{}", n);
   reply(ctx, |msg| msg.content(text)).await
 }
 
@@ -37,8 +33,100 @@ pub async fn color(ctx: &Context<'_>) -> Result<()> {
 
 #[macros::command(desc = "Ask the magic 8 ball")]
 pub async fn eightball(ctx: &Context<'_>, question: &str) -> Result<()> {
+  pub static ANSWERS: [&str; 20] = [
+    "It is certain",
+    "It is decidedly so",
+    "Without a doubt",
+    "Yes — definitely",
+    "You may rely on it",
+    "As I see it, yes",
+    "Most likely",
+    "Outlook good",
+    "Yes",
+    "Signs point to yes",
+    "Reply hazy, try again",
+    "Ask again later",
+    "Better not tell you now",
+    "Cannot predict now",
+    "Concentrate and ask again",
+    "Don't count on it",
+    "My reply is no",
+    "My sources say no",
+    "Outlook not so good",
+    "Very doubtful",
+  ];
+
   let answer = ANSWERS.choose(&mut thread_rng()).unwrap();
-  let text = format!("❔ {question}\n🎱 {answer}");
+  let text = format!("❔ {question}\n🎱 {answer}.");
+  reply(ctx, |msg| msg.content(text)).await
+}
+
+#[macros::command(desc = "Toss a coin")]
+pub async fn coin(
+  ctx: &Context<'_>,
+  #[desc = "How many coins to toss (min: 1, max: 1000)"] n: Option<i64>,
+) -> Result<()> {
+  const HEADS: &str = "\u{26ab}\u{fe0e}";
+  const TAILS: &str = "\u{26aa}\u{fe0e}";
+
+  let text = match n {
+    Some(1) | None => {
+      if random() {
+        format!("{HEADS} heads")
+      } else {
+        format!("{TAILS} tails")
+      }
+    }
+    Some(n @ 1..=1000) => {
+      let mut acc = String::new();
+      let mut count = [0; 2];
+      let mut rng = thread_rng();
+      for _ in 0..n {
+        let is_heads = rng.gen();
+        count[is_heads as usize] += 1;
+        acc.push(if is_heads { '\u{25cf}' } else { '\u{25cb}' });
+      }
+      let [t, h] = count;
+      format!("{h}{HEADS} {t}{TAILS} ({n} coins)\n{acc}")
+    }
+    _ => err::message!("`n` is either too big or too small"),
+  };
+
+  reply(ctx, |msg| msg.content(text)).await
+}
+
+#[macros::command(desc = "Roll a six-sided die")]
+pub async fn die(
+  ctx: &Context<'_>,
+  #[desc = "How many dice to roll (min: 1, max: 1000)"] n: Option<i64>,
+) -> Result<()> {
+  let side = |n| unsafe { mem::transmute(0x2680 + n) };
+  let text = match n {
+    Some(1) | None => {
+      let n = thread_rng().gen_range(0..6);
+      format!("{} {}", side(n), n + 1)
+    }
+    Some(n @ 1..=1000) => {
+      let mut head = String::new();
+      let mut body = String::new();
+      let mut count = [0; 6];
+      let mut sum = 0;
+      let mut rng = thread_rng();
+      for _ in 0..n {
+        let n = rng.gen_range(0..6);
+        body.push(side(n));
+        sum += n + 1;
+        count[n as usize] += 1;
+      }
+      for (i, n) in count.iter().enumerate() {
+        write!(head, " + {}{}", n, side(i as u32))?;
+      }
+      write!(head, " = {sum} ({n} dice)")?;
+      format!("{}\n{}", &head[3..], body)
+    }
+    _ => err::message!("`n` is either too big or too small"),
+  };
+
   reply(ctx, |msg| msg.content(text)).await
 }
 
@@ -54,26 +142,3 @@ where
   ctx.event.create_response(ctx, msg).await?;
   Ok(())
 }
-
-pub static ANSWERS: [&str; 20] = [
-  "It is certain.",
-  "It is decidedly so.",
-  "Without a doubt.",
-  "Yes — definitely.",
-  "You may rely on it.",
-  "As I see it, yes.",
-  "Most likely.",
-  "Outlook good.",
-  "Yes.",
-  "Signs point to yes.",
-  "Reply hazy, try again.",
-  "Ask again later.",
-  "Better not tell you now.",
-  "Cannot predict now.",
-  "Concentrate and ask again.",
-  "Don't count on it.",
-  "My reply is no.",
-  "My sources say no.",
-  "Outlook not so good.",
-  "Very doubtful.",
-];
