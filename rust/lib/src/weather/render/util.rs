@@ -14,7 +14,7 @@ pub fn datetime(offset: i32, timestamp: i64) -> DateTime<FixedOffset> {
 }
 
 pub fn beaufort_scale(wind_speed_ms: f64) -> &'static str {
-  const TABLE: [&str; 13] = [
+  const TABLE: [&str; 12] = [
     "calm",
     "light air",
     "light breeze",
@@ -27,9 +27,9 @@ pub fn beaufort_scale(wind_speed_ms: f64) -> &'static str {
     "severe gale",
     "storm",
     "violent storm",
-    "hurricane",
   ];
 
-  let b = (wind_speed_ms / 0.836).powf(2.0 / 3.0);
-  TABLE[b.round() as usize]
+  let f = (wind_speed_ms / 0.836).powf(2.0 / 3.0);
+  let i = f.round() as usize;
+  TABLE.get(i).map_or("hurricane", |&s| s)
 }

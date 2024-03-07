@@ -5,7 +5,7 @@ use cairo::*;
 use chrono::prelude::*;
 
 use crate::color::srgb::sRGB;
-use crate::discord;
+use crate::discord::colors::TABLE as DISCORD_COLORS;
 
 use super::fmt::Num;
 use super::range::Range;
@@ -13,9 +13,9 @@ use super::Result;
 use super::*;
 
 pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
+  let hour_width = 10.0;
+  let width = hour_width * weather.hourly.len() as f64;
   let height = 40.0;
-  let width = 48.0 * 10.0;
-  let w = width / weather.hourly.len() as f64;
   let gap = 22.0;
 
   ctx.save()?;
@@ -30,7 +30,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.set_line_cap(LineCap::Round);
 
     for i in 0..weather.hourly.len() {
-      let x = (0.5 + i as f64) * w;
+      let x = (0.5 + i as f64) * hour_width;
       ctx.move_to(x, 0.0);
       ctx.line_to(x, -height);
     }
@@ -81,7 +81,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     }
 
     let r = 6.5;
-    draw::rounded_rect(ctx, w / 2.0, -3.5, width - w, 0.0, r);
+    draw::rounded_rect(ctx, hour_width / 2.0, -3.5, width - hour_width, 0.0, r);
 
     ctx.save()?;
     ctx.set_line_width(2.0);
@@ -95,7 +95,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.restore()?;
 
     ctx.push_group();
-    ctx.translate(0.5 * w, 0.0);
+    ctx.translate(hour_width / 2.0, 0.0);
     let h0 = weather.hourly[0].dt;
     for i in -1..=weather.hourly.len() as i64 {
       let dt = util::datetime(weather.timezone_offset, h0 + i * 3600);
@@ -103,7 +103,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
         let text = dt.format("%H:%M").to_string();
         let ext = ctx.text_extents(&text)?;
         ctx.set_source_rgb_u32(if dt.hour() == 0 { text1 } else { text0 });
-        ctx.move_to(w * i as f64 - ext.x_advance() / 2.0, 0.0);
+        ctx.move_to(hour_width * i as f64 - ext.x_advance() / 2.0, 0.0);
         ctx.show_text(&text)?;
       }
     }
@@ -116,13 +116,13 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       rg.add_color_stop_rgba(1.0, 0.0, 0.0, 0.0, 0.0);
 
       ctx.push_group_with_content(Content::Alpha);
-      ctx.translate(w / 2.0, -3.5);
+      ctx.translate(hour_width / 2.0, -3.5);
       ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0);
-      ctx.rectangle(0.0, -r, width - w, 2.0 * r);
+      ctx.rectangle(0.0, -r, width - hour_width, 2.0 * r);
       ctx.fill()?;
       ctx.set_source(&rg)?;
       ctx.paint()?;
-      ctx.translate(width - w, 0.0);
+      ctx.translate(width - hour_width, 0.0);
       ctx.set_source(&rg)?;
       ctx.paint()?;
       ctx.pop_group()?
@@ -149,7 +149,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
 
     ctx.move_to(0.0, -height - 7.5);
     #[rustfmt::skip]
-    legend(ctx, discord::colors::TABLE[8].light, &[
+    legend(ctx, DISCORD_COLORS[8].light, &[
       (0x949ba4, format_args!(" Temperature ")),
       (0xffffff, format_args!("{:.0}", Num(temp.min))),
       (0x949ba4, format_args!(" to ")),
@@ -157,7 +157,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("°C")),
     ])?;
     #[rustfmt::skip]
-    legend(ctx, discord::colors::TABLE[2].light, &[
+    legend(ctx, DISCORD_COLORS[2].light, &[
       (0x949ba4, format_args!(" Dew point ")),
       (0xffffff, format_args!("{:.0}", Num(dew_point.min))),
       (0x949ba4, format_args!(" to ")),
@@ -165,18 +165,18 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("°C")),
     ])?;
 
-    ctx.translate(0.5 * w, 0.0);
+    ctx.translate(hour_width / 2.0, 0.0);
     ctx.set_line_cap(LineCap::Round);
     ctx.set_line_width(1.0);
 
-    draw::spline(ctx, w, &weather.hourly, |h| map(h.dew_point));
+    draw::spline(ctx, hour_width, &weather.hourly, |h| map(h.dew_point));
     ctx.set_dash(&[1.0, 3.0], 0.0);
-    ctx.set_source_rgb_u32(discord::colors::TABLE[2].light);
+    ctx.set_source_rgb_u32(DISCORD_COLORS[2].light);
     ctx.stroke()?;
 
-    draw::spline(ctx, w, &weather.hourly, |h| map(h.temp));
+    draw::spline(ctx, hour_width, &weather.hourly, |h| map(h.temp));
     ctx.set_dash(&[], 0.0);
-    ctx.set_source_rgb_u32(discord::colors::TABLE[8].light);
+    ctx.set_source_rgb_u32(DISCORD_COLORS[8].light);
     ctx.stroke()?;
 
     ctx.restore()?;
@@ -202,22 +202,22 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("m/s")),
     ])?;
     #[rustfmt::skip]
-    legend(ctx, discord::colors::TABLE[8].light, &[
+    legend(ctx, DISCORD_COLORS[8].light, &[
       (0x949ba4, format_args!(" Wind gusts up to ")),
       (0xffffff, format_args!("{:#.2}", Num(wind_gust.max))),
       (0x949ba4, format_args!("m/s")),
     ])?;
 
-    ctx.translate(0.5 * w, 0.0);
+    ctx.translate(hour_width / 2.0, 0.0);
 
     for (i, hour) in weather.hourly.iter().enumerate() {
-      draw::circle(ctx, w * i as f64, map(hour.wind_gust), 1.5);
+      draw::circle(ctx, hour_width * i as f64, map(hour.wind_gust), 1.5);
     }
-    ctx.set_source_rgb_u32(discord::colors::TABLE[8].light);
+    ctx.set_source_rgb_u32(DISCORD_COLORS[8].light);
     ctx.fill()?;
 
     for (i, hour) in weather.hourly.iter().enumerate() {
-      let (x, y) = (w * i as f64, map(hour.wind_speed));
+      let (x, y) = (hour_width * i as f64, map(hour.wind_speed));
       let angle = (hour.wind_deg as f64).to_radians();
       let scale = 5.0;
       draw::arrow(ctx, x, y, scale, angle);
@@ -246,7 +246,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.move_to(0.0, -height - 7.5);
     if rain.max > 0.0 {
       #[rustfmt::skip]
-      legend(ctx, discord::colors::TABLE[2].dark, &[
+      legend(ctx, DISCORD_COLORS[2].dark, &[
         (0x949ba4, format_args!(" Rain up to ")),
         (0xffffff, format_args!("{:#.2}", Num(rain.max))),
         (0x949ba4, format_args!("mm/h")),
@@ -254,7 +254,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     }
     if snow.max > 0.0 {
       #[rustfmt::skip]
-      legend(ctx, discord::colors::TABLE[8].dark, &[
+      legend(ctx, DISCORD_COLORS[8].dark, &[
         (0x949ba4, format_args!(" Snow up to ")),
         (0xffffff, format_args!("{:#.2}", Num(snow.max))),
         (0x949ba4, format_args!("mm/h")),
@@ -267,24 +267,25 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("%")),
     ])?;
 
-    for (i, h) in weather.hourly.iter().enumerate() {
-      let clouds = h.clouds as f64 / 100.0;
-      ctx.rectangle(0.5 + w * i as f64, -0.5, w - 1.0, -(height - 1.0) * clouds);
-    }
-    ctx.set_source_rgb_u32(0x3f4248);
-    ctx.fill()?;
+    for (i, hour) in weather.hourly.iter().enumerate() {
+      let (x, y) = (hour_width * i as f64 + 0.5, -0.5);
+      let (w, h) = (hour_width - 1.0, -(height - 1.0));
 
-    for (i, h) in weather.hourly.iter().enumerate() {
-      let rain = h.rain.as_ref().map_or(0.0, |r| r.one_hour);
-      let rain = range.unlerp(rain);
-      ctx.rectangle(0.5 + w * i as f64, -0.5, w - 1.0, -(height - 1.0) * rain);
-      ctx.set_source_rgb_u32_and_alpha(discord::colors::TABLE[2].dark, h.pop);
+      let clouds = hour.clouds as f64 / 100.0;
+      ctx.rectangle(x, y, w, h * clouds);
+      ctx.set_source_rgb_u32(0x3f4248);
       ctx.fill()?;
 
-      let snow = h.snow.as_ref().map_or(0.0, |r| r.one_hour);
+      let rain = hour.rain.as_ref().map_or(0.0, |r| r.one_hour);
+      let rain = range.unlerp(rain);
+      ctx.rectangle(x, y, w, h * rain);
+      ctx.set_source_rgb_u32_and_alpha(DISCORD_COLORS[2].dark, hour.pop);
+      ctx.fill()?;
+
+      let snow = hour.snow.as_ref().map_or(0.0, |r| r.one_hour);
       let snow = range.unlerp(snow);
-      ctx.rectangle(0.5 + w * i as f64, -0.5, w - 1.0, -(height - 1.0) * snow);
-      ctx.set_source_rgb_u32_and_alpha(discord::colors::TABLE[8].dark, h.pop);
+      ctx.rectangle(x, y, w, h * snow);
+      ctx.set_source_rgb_u32_and_alpha(DISCORD_COLORS[8].dark, hour.pop);
       ctx.fill()?;
     }
 
@@ -298,9 +299,9 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
 }
 
 fn color_sub(a: u32, b: u32) -> u32 {
-  let [b0, g0, r0, a0] = a.to_le_bytes();
-  let [b1, g1, r1, a1] = b.to_le_bytes();
-  u32::from_le_bytes([b0 - b1, g0 - g1, r0 - r1, a0 - a1])
+  let [a0, a1, a2, a3] = a.to_ne_bytes();
+  let [b0, b1, b2, b3] = b.to_ne_bytes();
+  u32::from_ne_bytes([a0 - b0, a1 - b1, a2 - b2, a3 - b3])
 }
 
 fn legend(ctx: &Context, color: u32, pairs: &[(u32, Arguments<'_>)]) -> cairo::Result<()> {

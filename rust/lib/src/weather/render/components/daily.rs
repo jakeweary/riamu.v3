@@ -102,6 +102,14 @@ pub fn daily(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.translate(day_width, 0.0);
   }
 
+  ctx.set_source_rgb_u32(color1);
+  ctx.translate(-10.5, 5.0 + 2.5 * font_size + day_width);
+  ctx.move_to(0.0, 0.0);
+  ctx.show_text("°C")?;
+  ctx.translate(0.0, 24.0 + 2.0 * font_size);
+  ctx.move_to(0.0, 0.0);
+  ctx.show_text("m/s")?;
+
   ctx.restore()?;
 
   Ok(())

@@ -77,9 +77,9 @@ impl From<sRGB<u8, 3>> for u32 {
   }
 }
 
-// &sRGB<u8, 4>] ←→ &u32
-// &sRGB<u8, 4>] ←→ &[u8; 4]
-// &sRGB<u8, 3>] ←→ &[u8; 3]
+// &sRGB<u8, 4> ←→ &u32
+// &sRGB<u8, 4> ←→ &[u8; 4]
+// &sRGB<u8, 3> ←→ &[u8; 3]
 //
 // &mut sRGB<u8, 4> ←→ &mut u32
 // &mut sRGB<u8, 4> ←→ &mut [u8; 4]
