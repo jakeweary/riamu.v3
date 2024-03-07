@@ -1,3 +1,4 @@
+pub mod weighted;
 pub mod xorshift64;
 
 pub fn f64(n: u64) -> f64 {

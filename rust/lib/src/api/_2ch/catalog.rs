@@ -1,6 +1,7 @@
-use rand::prelude::*;
 use regex::RegexBuilder;
 use serde::Deserialize;
+
+use crate::random::weighted;
 
 #[derive(Debug, Deserialize)]
 pub struct Catalog {
@@ -30,32 +31,8 @@ impl Catalog {
     F: Fn(&Thread) -> bool,
     W: Fn(&Thread) -> usize,
   {
-    let threads = || self.threads.iter().filter(|&t| filter(t));
-
-    let board_total = threads().map(&weight).sum();
-    let board_index = match board_total {
-      0 => return None,
-      n => thread_rng().gen_range(0..n),
-    };
-
-    let (thread, board_subtotal) = threads()
-      .scan(0, |acc, thread| {
-        *acc += weight(thread);
-        Some((thread, *acc))
-      })
-      .find(|&(_, acc)| board_index < acc)
-      .unwrap();
-
-    let thread_total = weight(thread);
-    let thread_index = board_index + thread_total - board_subtotal;
-
-    tracing::debug! {
-      "random pick: #{}/{} (#{}/{})",
-      1 + board_index, board_total,
-      1 + thread_index, thread_total,
-    }
-
-    Some((thread, thread_index))
+    let r = weighted::random(|| &self.threads, filter, weight)?;
+    Some((r.item, r.local_index))
   }
 }
 
