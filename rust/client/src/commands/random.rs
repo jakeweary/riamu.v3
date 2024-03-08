@@ -32,34 +32,31 @@ pub async fn color(ctx: &Context<'_>) -> Result<()> {
   reply(ctx, |msg| msg.embed(embed)).await
 }
 
-#[macros::command(desc = "Ask the magic 8 ball")]
-pub async fn eightball(ctx: &Context<'_>, #[desc = "A yes–no question"] question: &str) -> Result<()> {
-  pub static ANSWERS: [&str; 20] = [
-    "it is certain",
-    "it is decidedly so",
-    "without a doubt",
-    "yes — definitely",
-    "you may rely on it",
-    "as I see it, yes",
-    "most likely",
-    "outlook good",
-    "yes",
-    "signs point to yes",
-    "reply hazy, try again",
-    "ask again later",
-    "better not tell you now",
-    "cannot predict now",
-    "concentrate and ask again",
-    "don't count on it",
-    "my reply is no",
-    "my sources say no",
-    "outlook not so good",
-    "very doubtful",
-  ];
+#[macros::command(desc = "Take a card from a shuffled standard 52-card deck")]
+pub async fn card(
+  ctx: &Context<'_>,
+  #[min = 1]
+  #[max = 52]
+  #[desc = "How many cards to take"]
+  n: Option<i64>,
+) -> Result<()> {
+  let mut cards = [0; 52];
+  for (i, c) in cards.iter_mut().enumerate() {
+    *c = i as u8;
+  }
 
-  let answer = ANSWERS.choose(&mut thread_rng()).unwrap();
-  let text = format!("❔ {question}\n🎱 {answer}");
-  reply(ctx, |msg| msg.content(text)).await
+  let mut rng = XorShift64::from_time();
+  let (shuffled, _) = cards.partial_shuffle(&mut rng, n.unwrap_or(1) as usize);
+
+  let mut acc = String::new();
+  for &mut c in shuffled {
+    let (rank, suit) = (c / 4, c % 4);
+    let rank = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"][rank as usize];
+    let suit = ['\u{2660}', '\u{2663}', '\u{2665}', '\u{2666}'][suit as usize];
+    write!(acc, "{}{}\u{fe0e}\u{2002}", rank, suit)?;
+  }
+
+  reply(ctx, |msg| msg.content(acc)).await
 }
 
 #[macros::command(desc = "Toss a coin")]
@@ -140,6 +137,36 @@ pub async fn die(
     }
   };
 
+  reply(ctx, |msg| msg.content(text)).await
+}
+
+#[macros::command(desc = "Ask the magic 8 ball")]
+pub async fn eightball(ctx: &Context<'_>, #[desc = "A yes–no question"] question: &str) -> Result<()> {
+  pub static ANSWERS: [&str; 20] = [
+    "it is certain",
+    "it is decidedly so",
+    "without a doubt",
+    "yes — definitely",
+    "you may rely on it",
+    "as I see it, yes",
+    "most likely",
+    "outlook good",
+    "yes",
+    "signs point to yes",
+    "reply hazy, try again",
+    "ask again later",
+    "better not tell you now",
+    "cannot predict now",
+    "concentrate and ask again",
+    "don't count on it",
+    "my reply is no",
+    "my sources say no",
+    "outlook not so good",
+    "very doubtful",
+  ];
+
+  let answer = ANSWERS.choose(&mut thread_rng()).unwrap();
+  let text = format!("❔ {question}\n🎱 {answer}");
   reply(ctx, |msg| msg.content(text)).await
 }
 

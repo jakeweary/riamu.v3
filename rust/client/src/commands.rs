@@ -69,6 +69,7 @@ pub fn build() -> client::Commands {
     "random" => {
       "int" => random::int,
       "real" => random::real,
+      "card" => random::card,
       "coin" => random::coin,
       "die" => random::die,
       "color" => random::color,
