@@ -4,7 +4,7 @@ use std::mem;
 use rand::prelude::*;
 use serenity::all::*;
 
-use crate::client::{err, Context, Result};
+use crate::client::{Context, Result};
 
 #[macros::command(desc = "Random integer in [min, max] range, defaults to [1, 100]")]
 pub async fn int(ctx: &Context<'_>, min: Option<i64>, max: Option<i64>) -> Result<()> {
@@ -64,7 +64,10 @@ pub async fn eightball(ctx: &Context<'_>, question: &str) -> Result<()> {
 #[macros::command(desc = "Toss a coin")]
 pub async fn coin(
   ctx: &Context<'_>,
-  #[desc = "How many coins to toss (min: 1, max: 1000)"] n: Option<i64>,
+  #[min = 1]
+  #[max = 1000]
+  #[desc = "How many coins to toss"]
+  n: Option<i64>,
 ) -> Result<()> {
   const HEADS: &str = "\u{26ab}\u{fe0e}";
   const TAILS: &str = "\u{26aa}\u{fe0e}";
@@ -77,7 +80,7 @@ pub async fn coin(
         format!("{TAILS} tails")
       }
     }
-    Some(n @ 1..=1000) => {
+    Some(n) => {
       let mut acc = String::new();
       let mut count = [0; 2];
       let mut rng = thread_rng();
@@ -89,7 +92,6 @@ pub async fn coin(
       let [t, h] = count;
       format!("{h}{HEADS} {t}{TAILS} ({n} coins)\n{acc}")
     }
-    _ => err::message!("`n` is either too big or too small"),
   };
 
   reply(ctx, |msg| msg.content(text)).await
@@ -98,7 +100,10 @@ pub async fn coin(
 #[macros::command(desc = "Roll a six-sided die")]
 pub async fn die(
   ctx: &Context<'_>,
-  #[desc = "How many dice to roll (min: 1, max: 1000)"] n: Option<i64>,
+  #[min = 1]
+  #[max = 1000]
+  #[desc = "How many dice to roll"]
+  n: Option<i64>,
 ) -> Result<()> {
   let side = |n| unsafe { mem::transmute(0x2680 + n) };
   let text = match n {
@@ -106,7 +111,7 @@ pub async fn die(
       let n = thread_rng().gen_range(0..6);
       format!("{} {}", side(n), n + 1)
     }
-    Some(n @ 1..=1000) => {
+    Some(n) => {
       let mut head = String::new();
       let mut body = String::new();
       let mut count = [0; 6];
@@ -124,7 +129,6 @@ pub async fn die(
       write!(head, " = {sum} ({n} dice)")?;
       format!("{}\n{}", &head[3..], body)
     }
-    _ => err::message!("`n` is either too big or too small"),
   };
 
   reply(ctx, |msg| msg.content(text)).await

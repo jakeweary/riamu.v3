@@ -60,6 +60,14 @@ pub fn serialize(commands: &Commands) -> Vec<serenity::CreateCommand> {
     let choices = opt.choices.unwrap_or(&[]).iter();
     let desc = opt.description.unwrap_or("…");
     let builder = serenity::CreateCommandOption::new(opt.ty, opt.name, desc).required(opt.required);
+    let builder = match opt.min {
+      Some(n) => builder.min_number_value(n),
+      None => builder,
+    };
+    let builder = match opt.max {
+      Some(n) => builder.max_number_value(n),
+      None => builder,
+    };
     choices.fold(builder, |b, ch| b.add_string_choice(ch.name, ch.value))
   }
 

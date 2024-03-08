@@ -1,6 +1,8 @@
+use syn::parse_quote;
+
 pub fn option<T: quote::ToTokens>(x: Option<T>) -> syn::Expr {
   match x {
-    Some(x) => syn::parse_quote! { Some(#x) },
-    None => syn::parse_quote! { None },
+    Some(x) => parse_quote! { Some(#x) },
+    None => parse_quote! { None },
   }
 }

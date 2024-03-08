@@ -2,7 +2,7 @@ use darling::export::NestedMeta;
 use darling::{FromMeta, Result};
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{FnArg, ItemFn, Pat};
+use syn::{parse_quote, Expr, FnArg, ItemFn, Lit, Pat};
 
 use crate::util;
 
@@ -17,6 +17,8 @@ struct FnArgs {
 struct FnInputArgs {
   name: Option<String>,
   desc: Option<String>,
+  min: Option<Lit>,
+  max: Option<Lit>,
 }
 
 pub fn expand(args: TokenStream, input: TokenStream) -> Result<TokenStream> {
@@ -68,11 +70,10 @@ pub fn expand(args: TokenStream, input: TokenStream) -> Result<TokenStream> {
 
     #fn_vis fn #fn_ident(name: &'static str) -> crate::client::Command {
       use crate::client::*;
-      use std::{future::Future, pin::Pin};
 
       #(static #cmd_option_names_static: CommandOption = #cmd_options;)*
 
-      fn run<'a>(#cmd_context: &'a Context<'_>) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
+      fn run<'a>(#cmd_context: &'a Context<'_>) -> RunFuture<'a> {
         Box::pin(async {
           #(let #cmd_option_names = CommandOptionTrait::extract({
             #cmd_context.options.iter().find(|o| o.name == #cmd_option_names_static.name)
@@ -116,12 +117,16 @@ fn command_options(function: &mut ItemFn) -> Result<Vec<proc_macro2::TokenStream
         _ => unimplemented!(),
       });
       let desc = util::option(fn_input_args.desc);
+      let min = min_max(fn_input_args.min);
+      let max = min_max(fn_input_args.max);
       let ty = &*fn_input.ty;
 
       let option = quote! {
         CommandOption {
           name: #name,
           description: #desc,
+          min: #min,
+          max: #max,
           choices: <#ty as CommandOptionTrait>::CHOICES,
           required: <#ty as CommandOptionTrait>::REQUIRED,
           ty: <#ty as CommandOptionTrait>::TYPE,
@@ -131,4 +136,13 @@ fn command_options(function: &mut ItemFn) -> Result<Vec<proc_macro2::TokenStream
       Ok(option)
     })
     .collect()
+}
+
+fn min_max(lit: Option<Lit>) -> Expr {
+  match lit {
+    Some(Lit::Int(lit)) => parse_quote! { Some({ let n: i64 = #lit; n as f64 }) },
+    Some(Lit::Float(lit)) => parse_quote! { Some(#lit) },
+    Some(_) => unimplemented!(),
+    None => parse_quote! { None },
+  }
 }
