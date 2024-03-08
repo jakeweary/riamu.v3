@@ -1,5 +1,8 @@
-pub mod weighted;
-pub mod xorshift64;
+pub use weighted::*;
+pub use xorshift64::*;
+
+mod weighted;
+mod xorshift64;
 
 pub fn f64(n: u64) -> f64 {
   f64::from_bits(0x3ff << 52 | n >> 12) - 1.0

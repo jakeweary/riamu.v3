@@ -1,6 +1,6 @@
 use rand::prelude::*;
 
-pub struct Random<T> {
+pub struct Weighted<T> {
   pub item: T,
   pub local_index: usize,
   pub local_total: usize,
@@ -8,7 +8,7 @@ pub struct Random<T> {
   pub global_total: usize,
 }
 
-pub fn random<'a, T, U, I, F, W>(items: I, filter: F, weight: W) -> Option<Random<&'a T>>
+pub fn weighted<'a, T, U, I, F, W>(items: I, filter: F, weight: W) -> Option<Weighted<&'a T>>
 where
   U: IntoIterator<Item = &'a T>,
   I: Fn() -> U,
@@ -40,7 +40,7 @@ where
     1 + local_index, local_total,
   }
 
-  Some(Random {
+  Some(Weighted {
     item,
     global_total,
     global_index,

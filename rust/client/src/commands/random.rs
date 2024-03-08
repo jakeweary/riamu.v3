@@ -1,6 +1,7 @@
 use std::fmt::Write;
 use std::mem;
 
+use lib::random::XorShift64;
 use rand::prelude::*;
 use serenity::all::*;
 
@@ -32,32 +33,32 @@ pub async fn color(ctx: &Context<'_>) -> Result<()> {
 }
 
 #[macros::command(desc = "Ask the magic 8 ball")]
-pub async fn eightball(ctx: &Context<'_>, question: &str) -> Result<()> {
+pub async fn eightball(ctx: &Context<'_>, #[desc = "A yes–no question"] question: &str) -> Result<()> {
   pub static ANSWERS: [&str; 20] = [
-    "It is certain",
-    "It is decidedly so",
-    "Without a doubt",
-    "Yes — definitely",
-    "You may rely on it",
-    "As I see it, yes",
-    "Most likely",
-    "Outlook good",
-    "Yes",
-    "Signs point to yes",
-    "Reply hazy, try again",
-    "Ask again later",
-    "Better not tell you now",
-    "Cannot predict now",
-    "Concentrate and ask again",
-    "Don't count on it",
-    "My reply is no",
-    "My sources say no",
-    "Outlook not so good",
-    "Very doubtful",
+    "it is certain",
+    "it is decidedly so",
+    "without a doubt",
+    "yes — definitely",
+    "you may rely on it",
+    "as I see it, yes",
+    "most likely",
+    "outlook good",
+    "yes",
+    "signs point to yes",
+    "reply hazy, try again",
+    "ask again later",
+    "better not tell you now",
+    "cannot predict now",
+    "concentrate and ask again",
+    "don't count on it",
+    "my reply is no",
+    "my sources say no",
+    "outlook not so good",
+    "very doubtful",
   ];
 
   let answer = ANSWERS.choose(&mut thread_rng()).unwrap();
-  let text = format!("❔ {question}\n🎱 {answer}.");
+  let text = format!("❔ {question}\n🎱 {answer}");
   reply(ctx, |msg| msg.content(text)).await
 }
 
@@ -83,11 +84,19 @@ pub async fn coin(
     Some(n) => {
       let mut acc = String::new();
       let mut count = [0; 2];
-      let mut rng = thread_rng();
-      for _ in 0..n {
-        let is_heads = rng.gen();
-        count[is_heads as usize] += 1;
-        acc.push(if is_heads { '\u{25cf}' } else { '\u{25cb}' });
+      let mut tossed = 0;
+      let mut rng = XorShift64::from_time();
+      'outer: loop {
+        let bits = rng.next_u64();
+        for i in 0..64 {
+          let bit = bits >> i & 1;
+          acc.push(if bit == 0 { '\u{25cb}' } else { '\u{25cf}' });
+          count[bit as usize] += 1;
+          tossed += 1;
+          if tossed == n {
+            break 'outer;
+          }
+        }
       }
       let [t, h] = count;
       format!("{h}{HEADS} {t}{TAILS} ({n} coins)\n{acc}")
@@ -116,7 +125,7 @@ pub async fn die(
       let mut body = String::new();
       let mut count = [0; 6];
       let mut sum = 0;
-      let mut rng = thread_rng();
+      let mut rng = XorShift64::from_time();
       for _ in 0..n {
         let n = rng.gen_range(0..6);
         body.push(side(n));

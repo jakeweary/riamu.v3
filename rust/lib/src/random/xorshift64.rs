@@ -1,6 +1,8 @@
 // https://en.wikipedia.org/wiki/Xorshift
 // https://jstatsoft.org/v08/i14/paper
 
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use rand_core::{Error, RngCore, SeedableRng};
 
 use super::*;
@@ -8,6 +10,12 @@ use super::*;
 pub struct XorShift64(pub u64);
 
 impl XorShift64 {
+  pub fn from_time() -> Self {
+    let now = SystemTime::now();
+    let time = now.duration_since(UNIX_EPOCH).unwrap();
+    Self(time.as_nanos() as u64)
+  }
+
   pub fn u64(&mut self) -> u64 {
     self.0 ^= self.0 << 13;
     self.0 ^= self.0 >> 7;
@@ -35,12 +43,16 @@ impl XorShift64 {
 impl SeedableRng for XorShift64 {
   type Seed = [u8; 8];
 
+  fn seed_from_u64(seed: u64) -> Self {
+    Self(seed)
+  }
+
   fn from_seed(seed: Self::Seed) -> Self {
     Self(u64::from_ne_bytes(seed))
   }
 
-  fn seed_from_u64(seed: u64) -> Self {
-    Self(seed)
+  fn from_rng<R: RngCore>(mut rng: R) -> Result<Self, Error> {
+    Ok(Self(rng.next_u64()))
   }
 }
 

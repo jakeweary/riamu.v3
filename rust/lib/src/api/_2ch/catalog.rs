@@ -1,7 +1,7 @@
 use regex::RegexBuilder;
 use serde::Deserialize;
 
-use crate::random::weighted;
+use crate::random;
 
 #[derive(Debug, Deserialize)]
 pub struct Catalog {
@@ -31,7 +31,7 @@ impl Catalog {
     F: Fn(&Thread) -> bool,
     W: Fn(&Thread) -> usize,
   {
-    let r = weighted::random(|| &self.threads, filter, weight)?;
+    let r = random::weighted(|| &self.threads, filter, weight)?;
     Some((r.item, r.local_index))
   }
 }
