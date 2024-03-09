@@ -27,7 +27,6 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
 
   let lines = || -> cairo::Result<_> {
     ctx.save()?;
-    ctx.set_line_cap(LineCap::Round);
 
     for i in 0..weather.hourly.len() {
       let x = (0.5 + i as f64) * hour_width;
@@ -141,7 +140,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     let temp = Range::of(&weather.hourly, |h| h.temp);
     let dew_point = Range::of(&weather.hourly, |h| h.dew_point);
     let range = (temp & dew_point).round_n_rel(4.0).round();
-    let map = |value| -0.0 - (height - 0.0) * range.unlerp(value);
+    let map = |value| -height * range.unlerp(value);
 
     ctx.save()?;
     lines()?;
@@ -169,12 +168,14 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     ctx.set_line_cap(LineCap::Round);
     ctx.set_line_width(1.0);
 
-    draw::spline(ctx, hour_width, &weather.hourly, |h| map(h.dew_point));
+    let (x, y, sx, sy) = (0.0, 0.0, hour_width, 1.0);
+    draw::spline(ctx, 1.0 / 3.0, 0.0, x, y, sx, sy, &weather.hourly, |h| map(h.dew_point));
     ctx.set_dash(&[1.0, 3.0], 0.0);
     ctx.set_source_rgb_u32(DISCORD_COLORS[2].light);
     ctx.stroke()?;
 
-    draw::spline(ctx, hour_width, &weather.hourly, |h| map(h.temp));
+    let (x, y, sx, sy) = (0.0, 0.0, hour_width, 1.0);
+    draw::spline(ctx, 1.0 / 3.0, 0.0, x, y, sx, sy, &weather.hourly, |h| map(h.temp));
     ctx.set_dash(&[], 0.0);
     ctx.set_source_rgb_u32(DISCORD_COLORS[8].light);
     ctx.stroke()?;
@@ -188,7 +189,7 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
     let wind_speed = Range::of(&weather.hourly, |h| h.wind_speed);
     let wind_gust = Range::of(&weather.hourly, |h| h.wind_gust);
     let range = (wind_speed & wind_gust & 0.0).round_n_abs(4.0);
-    let map = |value| -0.0 - (height - 0.0) * range.unlerp(value);
+    let map = |value| -height * range.unlerp(value);
 
     ctx.save()?;
     lines()?;
@@ -267,14 +268,21 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("%")),
     ])?;
 
-    for (i, hour) in weather.hourly.iter().enumerate() {
-      let (x, y) = (hour_width * i as f64 + 0.5, -0.5);
-      let (w, h) = (hour_width - 1.0, -(height - 1.0));
+    ctx.save()?;
+    ctx.rectangle(0.0, -0.5, width, 1.0 - height);
+    ctx.clip();
+    let (x, y, sx, sy) = (hour_width / 2.0, -0.5, hour_width, 1e-2 * (1.0 - height));
+    draw::spline(ctx, 1.0 / 3.0, 0.5, x, y, sx, sy, &weather.hourly, |h| h.clouds as f64);
+    ctx.line_to(width, -0.5);
+    ctx.line_to(0.0, -0.5);
+    ctx.set_source_rgb_u32(color_sub(0x3f4248, 0x313338));
+    ctx.set_operator(Operator::Add);
+    ctx.fill()?;
+    ctx.restore()?;
 
-      let clouds = hour.clouds as f64 / 100.0;
-      ctx.rectangle(x, y, w, h * clouds);
-      ctx.set_source_rgb_u32(0x3f4248);
-      ctx.fill()?;
+    for (i, hour) in weather.hourly.iter().enumerate().skip(1) {
+      let (x, y) = (hour_width * (i as f64 - 0.5) + 0.5, -0.5);
+      let (w, h) = (hour_width - 1.0, -(height - 1.0));
 
       let rain = hour.rain.as_ref().map_or(0.0, |r| r.one_hour);
       let rain = range.unlerp(rain);

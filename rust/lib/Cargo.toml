@@ -12,6 +12,7 @@ cairo-rs = { workspace = true, features = ["v1_16"] }
 chrono = { workspace = true, features = ["std"] }
 ego-tree.workspace = true
 futures.workspace = true
+itertools.workspace = true
 rand.workspace = true
 rand_core.workspace = true
 regex.workspace = true
