@@ -51,13 +51,13 @@ impl<T, const N: usize> From<sRGB<T, N>> for [T; N] {
 
 impl From<u32> for sRGB<u8, 4> {
   fn from(srgb: u32) -> Self {
-    Self(unsafe { mem::transmute(srgb) })
+    unsafe { mem::transmute(srgb) }
   }
 }
 
 impl From<sRGB<u8, 4>> for u32 {
   fn from(srgb: sRGB<u8, 4>) -> Self {
-    unsafe { mem::transmute(srgb.0) }
+    unsafe { mem::transmute(srgb) }
   }
 }
 

@@ -29,8 +29,14 @@ impl<'a> Display for Name<'a> {
     static RE: OnceLock<Regex> = OnceLock::new();
     let re = RE.get_or_init(|| Regex::new(r"(?i)https?://|\[|\]").unwrap());
 
-    // TODO: there should be a better way than simply removing [ and ]
-    re.replace_fmt(f, self.0, |_, _| Ok(()))
+    // TODO: there should be a better way than this
+    // would be nice to keep actual brackets if they don't break formatting
+    // but that requires to understand exact conditions when it breaks
+    re.replace_fmt(f, self.0, |f, m| match m.as_str() {
+      "[" => f.write_str("\u{298b}"),
+      "]" => f.write_str("\u{298c}"),
+      _ => Ok(()),
+    })
   }
 }
 
