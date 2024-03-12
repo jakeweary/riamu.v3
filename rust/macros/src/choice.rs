@@ -6,6 +6,8 @@ use syn::{Data, DataEnum, DeriveInput};
 
 #[derive(Debug, FromMeta)]
 struct VariantArgs {
+  #[darling(default, rename = "default")]
+  _default: bool,
   name: Option<String>,
 }
 
@@ -25,7 +27,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
           .map(|attr| NestedMeta::Meta(attr.meta))
           .collect::<Vec<_>>()
       })?;
-      Ok(args.name.unwrap_or(v.ident.to_string()))
+      Ok(args.name.unwrap_or_else(|| v.ident.to_string()))
     })
     .collect::<Result<Vec<_>>>()?;
 

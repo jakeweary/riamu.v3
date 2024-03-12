@@ -52,10 +52,7 @@ pub fn build() -> client::Commands {
     "lookup" => {
       "imdb" => lookup::imdb::run,
       "omdb" => lookup::omdb::run,
-      "wikipedia" => {
-        "en" => lookup::wikipedia::en,
-        "ru" => lookup::wikipedia::ru,
-      },
+      "wikipedia" => lookup::wikipedia::run,
       "urban" => {
         "dictionary" => lookup::urban_dictionary::run,
       },
@@ -74,12 +71,10 @@ pub fn build() -> client::Commands {
       "die" => random::die,
       "color" => random::color,
       "2ch" => {
-        "post" => _2ch::random_post,
-        "post-with-attachments" => _2ch::random_post_with_attachments,
+        "post" => _2ch::random,
       },
       "4chan" => {
-        "post" => _4chan::random_post,
-        "post-with-attachment" => _4chan::random_post_with_attachment,
+        "post" => _4chan::random,
       },
     },
     "repost" => {

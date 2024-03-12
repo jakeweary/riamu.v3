@@ -1,7 +1,6 @@
-use regex::RegexBuilder;
 use serde::Deserialize;
 
-use crate::random;
+use crate::{random, regex};
 
 #[derive(Debug, Deserialize)]
 pub struct Catalog {
@@ -36,29 +35,13 @@ impl Catalog {
   }
 }
 
-// ---
-
-type RegexResult<T> = Result<T, regex::Error>;
-
-pub fn thread_filter(include: Option<&str>, exclude: Option<&str>) -> RegexResult<impl Fn(&Thread) -> bool> {
-  let is_included = regex_matcher(include, true)?;
-  let is_excluded = regex_matcher(exclude, false)?;
+pub fn thread_filter(include: Option<&str>, exclude: Option<&str>) -> regex::Result<impl Fn(&Thread) -> bool> {
+  let is_included = regex::matcher(include, true)?;
+  let is_excluded = regex::matcher(exclude, false)?;
 
   Ok(move |t: &Thread| {
     let included = is_included(&t.subject);
     let excluded = is_excluded(&t.subject);
     included && !excluded
-  })
-}
-
-fn regex_matcher(pattern: Option<&str>, default: bool) -> RegexResult<impl Fn(&str) -> bool> {
-  let re = match pattern {
-    Some(pat) => Some(RegexBuilder::new(pat).case_insensitive(true).build()?),
-    None => None,
-  };
-
-  Ok(move |input: &str| match &re {
-    Some(re) => re.is_match(input),
-    None => default,
   })
 }

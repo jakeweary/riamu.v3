@@ -25,7 +25,7 @@ pub async fn repost(ctx: &Context<'_>, url: &str) -> Result<()> {
 }
 
 #[macros::command(desc = "Random 2ch post")]
-pub async fn random_post(
+pub async fn random(
   ctx: &Context<'_>,
   #[desc = "2ch board id"] board: &str,
   #[desc = "Only threads where subject matches this regex"] include: Option<&str>,
@@ -36,28 +36,9 @@ pub async fn random_post(
   tracing::debug!("getting catalog…");
   let catalog = Catalog::get(board).await?;
   let filter = catalog::thread_filter(include, exclude)?;
-  let (thread, post_index) = catalog.random(filter, |t| t.posts_count as usize).unwrap();
-
-  tracing::debug!("getting thread…");
-  let thread = Thread::get("2ch.hk", board, thread.id).await?;
-  let post = &thread.posts[post_index];
-
-  reply(ctx, "2ch.hk", board, post.id, &thread).await
-}
-
-#[macros::command(desc = "Random 2ch post with media file attachments")]
-pub async fn random_post_with_attachments(
-  ctx: &Context<'_>,
-  #[desc = "2ch board id"] board: &str,
-  #[desc = "Only threads where subject matches this regex"] include: Option<&str>,
-  #[desc = "Only threads where subject doesn't match this regex"] exclude: Option<&str>,
-) -> Result<()> {
-  ctx.event.defer(ctx).await?;
-
-  tracing::debug!("getting catalog…");
-  let catalog = Catalog::get(board).await?;
-  let filter = catalog::thread_filter(include, exclude)?;
-  let (thread, file_index) = catalog.random(filter, |t| t.files_count as usize).unwrap();
+  let Some((thread, file_index)) = catalog.random(filter, |t| t.files_count as usize) else {
+    err::message!("no results");
+  };
 
   tracing::debug!("getting thread…");
   let thread = Thread::get("2ch.hk", board, thread.id).await?;

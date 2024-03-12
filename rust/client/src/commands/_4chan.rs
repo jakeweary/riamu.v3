@@ -23,7 +23,7 @@ pub async fn repost(ctx: &Context<'_>, #[desc = "4chan thread url"] url: &str) -
 }
 
 #[macros::command(desc = "Random 4chan post")]
-pub async fn random_post(
+pub async fn random(
   ctx: &Context<'_>,
   #[desc = "4chan board id"] board: &str,
   #[desc = "Only threads where subject matches this regex"] include: Option<&str>,
@@ -34,28 +34,9 @@ pub async fn random_post(
   tracing::debug!("getting catalog…");
   let catalog = Catalog::get(board).await?;
   let filter = catalog::thread_filter(include, exclude)?;
-  let (thread, post_index) = catalog.random(filter, |t| 1 + t.replies as usize).unwrap();
-
-  tracing::debug!("getting thread…");
-  let thread = Thread::get(board, thread.id).await?;
-  let post = &thread.posts[post_index];
-
-  reply(ctx, "boards.4chan.org", board, post.id, &thread).await
-}
-
-#[macros::command(desc = "Random 4chan post with a media file attachment")]
-pub async fn random_post_with_attachment(
-  ctx: &Context<'_>,
-  #[desc = "4chan board id"] board: &str,
-  #[desc = "Only threads where subject matches this regex"] include: Option<&str>,
-  #[desc = "Only threads where subject doesn't match this regex"] exclude: Option<&str>,
-) -> Result<()> {
-  ctx.event.defer(ctx).await?;
-
-  tracing::debug!("getting catalog…");
-  let catalog = Catalog::get(board).await?;
-  let filter = catalog::thread_filter(include, exclude)?;
-  let (thread, file_index) = catalog.random(filter, |t| 1 + t.images as usize).unwrap();
+  let Some((thread, file_index)) = catalog.random(filter, |t| 1 + t.images as usize) else {
+    err::message!("no results");
+  };
 
   tracing::debug!("getting thread…");
   let thread = Thread::get(board, thread.id).await?;

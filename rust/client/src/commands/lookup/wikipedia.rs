@@ -6,21 +6,12 @@ use url::Url;
 
 use crate::client::{err, Context, Result};
 
-#[macros::command(desc = "Look up a term on Wikipedia (english lang.)")]
-pub async fn en(ctx: &Context<'_>, term: &str) -> Result<()> {
-  lookup(ctx, term, "en").await
-}
-
-#[macros::command(desc = "Look up a term on Wikipedia (russian lang.)")]
-pub async fn ru(ctx: &Context<'_>, term: &str) -> Result<()> {
-  lookup(ctx, term, "ru").await
-}
-
-async fn lookup(ctx: &Context<'_>, term: &str, lang: &str) -> Result<()> {
+#[macros::command(desc = "Look up a term on Wikipedia")]
+pub async fn run(ctx: &Context<'_>, term: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("fetching json…");
-  let Ok(json) = Json::get(term, lang).await else {
+  let Ok(json) = Json::get(term, "en").await else {
     err::message!("could not find anything");
   };
 

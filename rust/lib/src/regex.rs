@@ -1,6 +1,9 @@
 use std::fmt::{self, Formatter};
+use std::result;
 
-use regex::{Match, Regex};
+pub use regex::*;
+
+pub type Result<T> = result::Result<T, Error>;
 
 pub trait RegexExt {
   fn replace_fmt<F>(&self, fmt: &mut Formatter<'_>, input: &str, f: F) -> fmt::Result
@@ -23,4 +26,16 @@ impl RegexExt for Regex {
     fmt.write_str(unsafe { input.get_unchecked(last_match..) })?;
     Ok(())
   }
+}
+
+pub fn matcher(pattern: Option<&str>, default: bool) -> Result<impl Fn(&str) -> bool> {
+  let re = match pattern {
+    Some(pat) => Some(RegexBuilder::new(pat).case_insensitive(true).build()?),
+    None => None,
+  };
+
+  Ok(move |input: &str| match &re {
+    Some(re) => re.is_match(input),
+    None => default,
+  })
 }
