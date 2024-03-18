@@ -1,4 +1,4 @@
-use std::f32::consts::TAU;
+use std::f32::consts::TAU as τ;
 
 use super::*;
 
@@ -23,7 +23,7 @@ impl From<RGB> for HSV {
 
 impl From<HSV> for Lab {
   fn from(HSV { h, s, v }: HSV) -> Self {
-    let (aʹ, bʹ) = ((TAU * h).cos(), (TAU * h).sin());
+    let (bʹ, aʹ) = (τ * h).sin_cos();
     let (L_cusp, C_cusp) = find_cusp(aʹ, bʹ);
     let (S_max, T_max) = to_ST(L_cusp, C_cusp);
     let S_0 = 0.5;
@@ -57,7 +57,7 @@ impl From<HSV> for Lab {
 
 impl From<Lab> for HSV {
   fn from(Lab { L, a, b }: Lab) -> Self {
-    let h = 0.5 + (-b).atan2(-a) / TAU;
+    let h = 0.5 + (-b).atan2(-a) / τ;
     let C = a.hypot(b);
     let (aʹ, bʹ) = (a / C, b / C);
     let (L_cusp, C_cusp) = find_cusp(aʹ, bʹ);

@@ -12,10 +12,12 @@ use self::helpers::*;
 pub use self::hsl::*;
 pub use self::hsv::*;
 pub use self::lab::*;
+pub use self::lch::*;
 
 mod hsl;
 mod hsv;
 mod lab;
+mod lch;
 
 pub mod gamut_clip;
 pub mod helpers;

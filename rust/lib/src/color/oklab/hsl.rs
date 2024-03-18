@@ -1,4 +1,4 @@
-use std::f32::consts::TAU;
+use std::f32::consts::TAU as τ;
 
 use super::*;
 
@@ -32,7 +32,7 @@ impl From<HSL> for Lab {
     }
 
     let L = toe::inv(l);
-    let (aʹ, bʹ) = ((TAU * h).cos(), (TAU * h).sin());
+    let (bʹ, aʹ) = (τ * h).sin_cos();
     let (C_0, C_mid, C_max) = get_Cs(L, aʹ, bʹ);
 
     let mid = 0.8;
@@ -60,7 +60,7 @@ impl From<HSL> for Lab {
 
 impl From<Lab> for HSL {
   fn from(Lab { L, a, b }: Lab) -> Self {
-    let h = 0.5 + (-b).atan2(-a) / TAU;
+    let h = 0.5 + (-b).atan2(-a) / τ;
     let C = a.hypot(b);
     let (aʹ, bʹ) = (a / C, b / C);
     let (C_0, C_mid, C_max) = get_Cs(L, aʹ, bʹ);
