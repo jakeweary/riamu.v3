@@ -1,4 +1,3 @@
-use std::f64::consts::SQRT_2;
 use std::f64::consts::{PI as π, TAU as τ};
 
 use cairo::*;
@@ -91,34 +90,29 @@ impl ContextExt for Context {
   // https://github.com/phamfoo/figma-squircle/blob/main/packages/figma-squircle/src/draw.ts
   fn rounded_rect_figma(&self, x: f64, y: f64, w: f64, h: f64, r: f64, t: f64) {
     let (xʹ, yʹ) = (x + w, y + h);
-    let α = π / 4.0 * (1.0 - t);
-    let β = π / 4.0 * t;
-    let p = r * (1.0 + t);
-    let h = r * (π / 8.0 - α / 2.0).tan(); // P3 to P4 distance
-    let e = r * α.sin() * SQRT_2; // arc section length
-    let d = h * β.sin();
-    let c = h * β.cos();
-    let b = (p - c - d - e) / 3.0;
-    let a = 2.0 * b;
-    let (a0, a1, a2, a3) = (0.25 * π, 0.75 * π, 1.25 * π, 1.75 * π);
-    let (k0, k1, k2, k3) = (p, p - a, p - a - b, p - a - b - c);
+    let θ = 0.25 * π * t;
+    let y4 = (1.0 - θ.cos()) * r;
+    let x4 = (1.0 - θ.sin()) * r;
+    let x3 = (1.0 - (0.5 * θ).tan()) * r;
+    let x1 = (1.0 + t) * r;
+    let x2 = (x1 + x3 * 2.0) / 3.0;
     self.new_sub_path();
-    self.line_to(x, y + k0); // top left
-    self.curve_to(x, y + k1, x, y + k2, x + d, y + k3);
-    self.arc(x + r, y + r, r, a2 - α, a2 + α);
-    self.curve_to(x + k2, y, x + k1, y, x + k0, y);
-    self.line_to(xʹ - k0, y); // top right
-    self.curve_to(xʹ - k1, y, xʹ - k2, y, xʹ - k3, y + d);
-    self.arc(xʹ - r, y + r, r, a3 - α, a3 + α);
-    self.curve_to(xʹ, y + k2, xʹ, y + k1, xʹ, y + k0);
-    self.line_to(xʹ, yʹ - k0); // bottom right
-    self.curve_to(xʹ, yʹ - k1, xʹ, yʹ - k2, xʹ - d, yʹ - k3);
-    self.arc(xʹ - r, yʹ - r, r, a0 - α, a0 + α);
-    self.curve_to(xʹ - k2, yʹ, xʹ - k1, yʹ, xʹ - k0, yʹ);
-    self.line_to(x + k0, yʹ); // bottom left
-    self.curve_to(x + k1, yʹ, x + k2, yʹ, x + k3, yʹ - d);
-    self.arc(x + r, yʹ - r, r, a1 - α, a1 + α);
-    self.curve_to(x, yʹ - k2, x, yʹ - k1, x, yʹ - k0);
+    self.line_to(x, y + x1); // top left
+    self.curve_to(x, y + x2, x, y + x3, x + y4, y + x4);
+    self.arc(x + r, y + r, r, π + θ, 1.5 * π - θ);
+    self.curve_to(x + x3, y, x + x2, y, x + x1, y);
+    self.line_to(xʹ - x1, y); // top right
+    self.curve_to(xʹ - x2, y, xʹ - x3, y, xʹ - x4, y + y4);
+    self.arc(xʹ - r, y + r, r, 1.5 * π + θ, -θ);
+    self.curve_to(xʹ, y + x3, xʹ, y + x2, xʹ, y + x1);
+    self.line_to(xʹ, yʹ - x1); // bottom right
+    self.curve_to(xʹ, yʹ - x2, xʹ, yʹ - x3, xʹ - y4, yʹ - x4);
+    self.arc(xʹ - r, yʹ - r, r, θ, 0.5 * π - θ);
+    self.curve_to(xʹ - x3, yʹ, xʹ - x2, yʹ, xʹ - x1, yʹ);
+    self.line_to(x + x1, yʹ); // bottom left
+    self.curve_to(x + x2, yʹ, x + x3, yʹ, x + x4, yʹ - y4);
+    self.arc(x + r, yʹ - r, r, 0.5 * π + θ, π - θ);
+    self.curve_to(x, yʹ - x3, x, yʹ - x2, x, yʹ - x1);
     self.close_path();
   }
 
