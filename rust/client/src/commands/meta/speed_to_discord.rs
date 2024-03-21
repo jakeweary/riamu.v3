@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use futures::StreamExt;
 use lib::fmt::num::Format as _;
-use lib::random::XorShift64;
+use lib::random::{Random, XorShift64};
 use serenity::all::*;
 
 use crate::client::{Context, Result};

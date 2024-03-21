@@ -1,7 +1,7 @@
 use std::fmt::Write;
 use std::mem;
 
-use lib::random::XorShift64;
+use lib::random::{Random, XorShift64};
 use rand::prelude::*;
 use serenity::all::*;
 
