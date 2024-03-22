@@ -2,7 +2,6 @@ use cairo::*;
 use chrono::Offset;
 
 use crate::cairo::ext::ContextExt;
-use crate::fmt::num::Format as _;
 use crate::weather::render::iso3166::TABLE as ISO3166;
 
 use super::fmt::Num;
@@ -119,11 +118,15 @@ pub fn current(ctx: &Context, weather: &api::Onecall, loc: &api::geo::Location) 
   show_icon("\u{e9e4}")?;
   ctx.show_text(&format!(" {}hPa ", weather.current.pressure))?;
 
-  show_icon("\u{e8f4}")?;
-  ctx.show_text(&format!(" {}m ", weather.current.visibility.si().precision(2)))?;
+  if let Some(visibility @ ..=9999) = weather.current.visibility {
+    show_icon("\u{e8f4}")?;
+    ctx.show_text(&format!(" {}m ", visibility))?;
+  }
 
-  show_icon("\u{e81a}")?;
-  ctx.show_text(&format!(" {:#.2} ", Num(weather.current.uvi)))?;
+  if weather.current.uvi > 0.0 {
+    show_icon("\u{e81a}")?;
+    ctx.show_text(&format!(" {:#.2} ", Num(weather.current.uvi)))?;
+  }
 
   ctx.restore()?;
 

@@ -34,7 +34,7 @@ pub struct Current {
   // pub clouds: u8,                   // %
   pub pressure: u16,                   // hPa
   pub uvi: f64,                        // uv index
-  pub visibility: u16,                 // m
+  pub visibility: Option<u16>,         // m
 
   // pub wind_deg: u16,                // degrees (meteorological)
   pub wind_speed: f64,                 // m/s
@@ -65,7 +65,7 @@ pub struct Hour {
   pub clouds: u8,                      // %
   // pub pressure: u16,                // hPa
   pub uvi: f64,                        // uv index
-  // pub visibility: u16,              // m
+  // pub visibility: Option<u16>,      // m
 
   pub wind_deg: u16,                   // degrees (meteorological)
   pub wind_speed: f64,                 // m/s
