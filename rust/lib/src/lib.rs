@@ -12,7 +12,10 @@ pub mod api {
   pub mod _4chan;
 }
 pub mod cairo {
-  pub mod blur;
+  pub mod blur {
+    pub mod accurate;
+    pub mod fast;
+  }
   pub mod ext;
   pub mod util;
 }

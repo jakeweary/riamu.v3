@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use cairo::glib;
 use futures::StreamExt;
-use lib::cairo::blur::gaussian_blur;
+use lib::cairo::blur::accurate::gaussian_blur;
 use lib::cairo::ext::ContextExt;
 use lib::discord::link::{self, Link};
 use lib::fmt::num::Format as _;
