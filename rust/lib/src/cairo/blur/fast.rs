@@ -1,7 +1,7 @@
-use std::slice;
 use std::{cmp::max, iter::zip, mem::swap};
 
 use cairo::*;
+use rayon::prelude::*;
 
 use crate::color::srgb::f32_to_srgb8_v2 as f32_to_srgb8;
 use crate::color::srgb::srgb8_to_f32;
@@ -17,32 +17,33 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
     panic!("unsupported image format");
   };
 
+  let (scale_x, scale_y) = srf.device_scale();
   let width = srf.width() as usize;
   let height = srf.height() as usize;
-  let (scale_x, scale_y) = srf.device_scale();
+  let srf_ptr = srf.data().unwrap().as_mut_ptr() as usize;
 
-  let mut srf = srf.data().unwrap();
-  let srf: &mut [[u8; 4]] = {
-    let len = srf.len() / 4;
-    let ptr = srf.as_mut_ptr().cast();
-    unsafe { slice::from_raw_parts_mut(ptr, len) }
-  };
-
-  let mid = max(width, height);
-  let mut tmp = vec![[0.0; 3]; 2 * mid];
-  let (mut tmp0, mut tmp1) = tmp.split_at_mut(mid);
-
-  let mut blur = |size, stride, σ, n| {
+  let blur = |size, stride, σ, n| {
     let [width, height] = size;
     let [stride_x, stride_y] = stride;
     let (_, box_blur_widths) = box_blur_widths(σ, n);
 
-    for y in 0..height {
-      let i = stride_y * y;
+    let tmp_mid = max(width, height);
+    let tmp = vec![[0.0; 3]; 2 * tmp_mid];
+
+    (0..height).into_par_iter().for_each_with(tmp, |tmp, y| {
+      let (mut tmp0, mut tmp1) = tmp.split_at_mut(tmp_mid);
+
+      // SAFETY: safe and aliasing-free as long as `stride_x` and `stride_y` are sound
+      // and the iteration is stopped within `srf` buffer bounds, here it fully relies
+      // to be stopped by the `zip` combinators below
+      let srf_row = || {
+        let srf_ptr = srf_ptr as *mut [u8; 4];
+        let indices = (stride_y * y..).step_by(stride_x);
+        indices.map(move |i| unsafe { &mut *srf_ptr.add(i) })
+      };
 
       // read current row of pixels
-      let row = srf[i..].iter_mut().step_by(stride_x);
-      for (dst, src) in zip(&mut tmp0[..width], row) {
+      for (dst, src) in zip(&mut tmp0[..width], srf_row()) {
         dst[0] = srgb8_to_f32(src[0]);
         dst[1] = srgb8_to_f32(src[1]);
         dst[2] = srgb8_to_f32(src[2]);
@@ -102,13 +103,12 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
       }
 
       // write back current row of pixels
-      let row = srf[i..].iter_mut().step_by(stride_x);
-      for (src, dst) in zip(&tmp0[..width], row) {
+      for (src, dst) in zip(&tmp0[..width], srf_row()) {
         dst[0] = f32_to_srgb8(src[0]);
         dst[1] = f32_to_srgb8(src[1]);
         dst[2] = f32_to_srgb8(src[2]);
       }
-    }
+    });
   };
 
   if σx > 0.0 {

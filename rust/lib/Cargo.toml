@@ -15,6 +15,7 @@ futures.workspace = true
 itertools.workspace = true
 rand.workspace = true
 rand_core.workspace = true
+rayon.workspace = true
 regex.workspace = true
 reqwest = { workspace = true, features = ["default-tls", "json", "stream"] }
 scraper.workspace = true
