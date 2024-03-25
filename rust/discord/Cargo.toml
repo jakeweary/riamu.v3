@@ -1,0 +1,11 @@
+[package]
+name = "discord"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+regex.workspace = true
+regex-ext.workspace = true

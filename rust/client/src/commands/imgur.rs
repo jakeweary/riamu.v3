@@ -3,14 +3,14 @@ use serde::Deserialize;
 use serenity::all::*;
 use url::Url;
 
-use crate::client::{err, Context, Result};
+use crate::client::{command, err, Context, Result};
 
-#[macros::command(desc = "Upload a media file to Imgur")]
+#[command(desc = "Upload a media file to Imgur")]
 pub async fn file(ctx: &Context<'_>, file: &Attachment) -> Result<()> {
   upload(ctx, &file.url, &file.filename).await
 }
 
-#[macros::command(desc = "Upload a media file to Imgur by URL")]
+#[command(desc = "Upload a media file to Imgur by URL")]
 pub async fn url(ctx: &Context<'_>, url: &str) -> Result<()> {
   let parsed = Url::parse(url)?;
   let filename = parsed.path_segments().and_then(|s| s.last()).unwrap();

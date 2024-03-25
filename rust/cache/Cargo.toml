@@ -1,0 +1,17 @@
+[package]
+name = "cache"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+filetime.workspace = true
+fmt.workspace = true
+inotify.workspace = true
+lru.workspace = true
+parking_lot.workspace = true
+tracing.workspace = true
+url.workspace = true
+util.workspace = true

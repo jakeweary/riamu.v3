@@ -4,9 +4,9 @@ use serde::Deserialize;
 use serenity::all::*;
 use url::Url;
 
-use crate::client::{err, Context, Result};
+use crate::client::{command, err, Context, Result};
 
-#[macros::command(desc = "Look up a term on Wikipedia")]
+#[command(desc = "Look up a term on Wikipedia")]
 pub async fn run(ctx: &Context<'_>, term: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

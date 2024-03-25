@@ -19,10 +19,21 @@ manual_range_contains = "allow"
 let_and_return = "allow"
 
 [workspace.dependencies]
+api = { path = "rust/api" }
 c = { path = "rust/c" }
-lib = { path = "rust/lib" }
-macros = { path = "rust/macros" }
+cache = { path = "rust/cache" }
+cairo-ext = { path = "rust/cairo-ext" }
+client-macros = { path = "rust/client-macros" }
+color = { path = "rust/color" }
+discord = { path = "rust/discord" }
+ffmpeg = { path = "rust/ffmpeg" }
+fmt = { path = "rust/fmt" }
+gcra = { path = "rust/gcra" }
 python = { path = "rust/python" }
+random = { path = "rust/random" }
+regex-ext = { path = "rust/regex-ext" }
+util = { path = "rust/util" }
+weather = { path = "rust/weather" }
 
 cairo-rs = { version = "*", default-features = false }
 chrono = { version = "*", default-features = false }

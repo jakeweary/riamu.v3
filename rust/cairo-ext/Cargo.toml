@@ -1,0 +1,12 @@
+[package]
+name = "cairo-ext"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cairo-rs.workspace = true
+color.workspace = true
+rayon.workspace = true

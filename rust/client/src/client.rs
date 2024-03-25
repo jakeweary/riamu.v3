@@ -4,13 +4,15 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use ::serenity::all as serenity;
+use discord::colors;
 use futures::{FutureExt, TryFutureExt};
-use lib::discord::colors;
 use pyo3::{PyErr, Python};
 use tokio::signal::{self, unix::*};
+use cache::LruFileCache;
 
-use crate::cache::LruFileCache;
 use crate::db;
+
+pub use client_macros::*;
 
 pub use self::command::*;
 pub use self::command_error::*;

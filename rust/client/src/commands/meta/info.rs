@@ -1,16 +1,15 @@
-use std::fmt::{self, Write};
-use std::result::Result as StdResult;
+use std::fmt::Write;
 use std::time::Instant;
 use std::{env, iter, process, str};
 
-use lib::fmt::num::Format as _;
+use fmt::num::Format as _;
 use procfs::{process::*, *};
 use serenity::all::*;
 
-use crate::client::{Context, Result};
+use crate::client::{command, Context, Result};
 use crate::db::{self, counters::Counter};
 
-#[macros::command(desc = "Show some technical info about me")]
+#[command(desc = "Show some technical info about me")]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
   let prev = KernelStats::current()?;
   let rtt = Instant::now();
@@ -51,7 +50,7 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
 // ---
 
 #[rustfmt::skip]
-fn desc(load: &LoadAverage, prev: &KernelStats, curr: &KernelStats) -> StdResult<String, fmt::Error> {
+fn desc(load: &LoadAverage, prev: &KernelStats, curr: &KernelStats) -> fmt::Result<String> {
   let mut acc = String::new();
   writeln!(acc, "`{:.2}` `{:.2}` `{:.2}` load average", load.one, load.five, load.fifteen)?;
   for (prev, curr) in iter::zip(&prev.cpu_time, &curr.cpu_time) {
@@ -62,7 +61,7 @@ fn desc(load: &LoadAverage, prev: &KernelStats, curr: &KernelStats) -> StdResult
   Ok(acc)
 }
 
-fn footer(counters: &[Counter]) -> StdResult<CreateEmbedFooter, fmt::Error> {
+fn footer(counters: &[Counter]) -> fmt::Result<CreateEmbedFooter> {
   let mut acc = String::new();
   for (i, counter) in counters.iter().enumerate() {
     let sep = if i == 0 { "received" } else { "," };
@@ -71,7 +70,7 @@ fn footer(counters: &[Counter]) -> StdResult<CreateEmbedFooter, fmt::Error> {
   Ok(CreateEmbedFooter::new(acc))
 }
 
-fn system(mem: &Meminfo, uptime: &Uptime) -> StdResult<String, fmt::Error> {
+fn system(mem: &Meminfo, uptime: &Uptime) -> fmt::Result<String> {
   let mut acc = String::new();
   if let Some(available) = mem.mem_available {
     let used = mem.mem_total - available;
@@ -81,21 +80,21 @@ fn system(mem: &Meminfo, uptime: &Uptime) -> StdResult<String, fmt::Error> {
     writeln!(acc, "`{}B` free", mem.mem_free.iec())?;
   }
   writeln!(acc, "`{}B` total", mem.mem_total.iec())?;
-  writeln!(acc, "`{}` uptime", lib::fmt::dhms(uptime.uptime as u64))?;
+  writeln!(acc, "`{}` uptime", ::fmt::dhms(uptime.uptime as u64))?;
   Ok(acc)
 }
 
-fn process(stat: &Stat, statm: &StatM, uptime: &Uptime) -> StdResult<String, fmt::Error> {
+fn process(stat: &Stat, statm: &StatM, uptime: &Uptime) -> fmt::Result<String> {
   let page_size = procfs::page_size();
   let mut acc = String::new();
   writeln!(acc, "`{}B` virtual", (page_size * statm.size).iec())?;
   writeln!(acc, "`{}B` resident", (page_size * statm.resident).iec())?;
   writeln!(acc, "`{}B` shared", (page_size * statm.shared).iec())?;
-  writeln!(acc, "`{}` uptime", lib::fmt::dhms(process_uptime(uptime, stat)))?;
+  writeln!(acc, "`{}` uptime", ::fmt::dhms(process_uptime(uptime, stat)))?;
   Ok(acc)
 }
 
-fn discord(servers: usize, channels: usize, users: usize, rtt: f64) -> StdResult<String, fmt::Error> {
+fn discord(servers: usize, channels: usize, users: usize, rtt: f64) -> fmt::Result<String> {
   let mut acc = String::new();
   writeln!(acc, "`{}` servers", servers.k())?;
   writeln!(acc, "`{}` channels", channels.k())?;
@@ -104,7 +103,7 @@ fn discord(servers: usize, channels: usize, users: usize, rtt: f64) -> StdResult
   Ok(acc)
 }
 
-fn runtime_info(versions: &[(String, String)]) -> StdResult<String, fmt::Error> {
+fn runtime_info(versions: &[(String, String)]) -> fmt::Result<String> {
   let mut acc = String::new();
   for (i, (k, v)) in versions.iter().enumerate() {
     let sep = if i % 3 == 2 { '\n' } else { ' ' };
@@ -114,7 +113,7 @@ fn runtime_info(versions: &[(String, String)]) -> StdResult<String, fmt::Error> 
   Ok(acc)
 }
 
-fn build_info() -> StdResult<String, fmt::Error> {
+fn build_info() -> fmt::Result<String> {
   let normalize = |input: &str| {
     let (name, input) = input.split_once(' ')?;
     let (version, input) = input.split_once(' ')?;

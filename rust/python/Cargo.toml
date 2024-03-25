@@ -7,9 +7,9 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-lib.workspace = true
 pyo3.workspace = true
 itertools.workspace = true
 log.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+util.workspace = true

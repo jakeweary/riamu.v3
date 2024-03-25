@@ -7,7 +7,22 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
+client-macros.workspace = true
+
+api.workspace = true
 c.workspace = true
+cairo-ext.workspace = true
+color.workspace = true
+discord.workspace = true
+ffmpeg.workspace = true
+fmt.workspace = true
+gcra.workspace = true
+python.workspace = true
+random.workspace = true
+regex-ext.workspace = true
+util.workspace = true
+weather.workspace = true
+
 cairo-rs = { workspace = true, features = ["png", "v1_16"] }
 chrono.workspace = true
 ego-tree.workspace = true
@@ -15,16 +30,13 @@ filetime.workspace = true
 futures.workspace = true
 inotify.workspace = true
 itertools.workspace = true
-lib.workspace = true
 log.workspace = true
 lru.workspace = true
-macros.workspace = true
 pango = { workspace = true, features = ["v1_42"] }
 pangocairo.workspace = true
 parking_lot = "*"
 procfs.workspace = true
 pyo3.workspace = true
-python.workspace = true
 rand.workspace = true
 regex.workspace = true
 reqwest = { workspace = true, features = ["default-tls", "json", "stream"] }
@@ -39,3 +51,4 @@ tokio-util.workspace = true
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 url.workspace = true
+cache.workspace = true

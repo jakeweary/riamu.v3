@@ -1,8 +1,8 @@
 use serenity::all::*;
 
-use crate::client::{err, Context, Result};
+use crate::client::{command, err, Context, Result};
 
-#[macros::command(desc = "Look up a movie on IMDB")]
+#[command(desc = "Look up a movie on IMDB")]
 pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
@@ -21,9 +21,9 @@ pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
 
 mod api {
   use std::borrow::Cow;
-  use std::fmt::{self, Write};
+  use std::fmt::Write;
 
-  use lib::fmt::num::Format as _;
+  use fmt::num::Format as _;
   use reqwest::header;
   use scraper::{Html, Selector};
   use serde::Deserialize;
@@ -122,9 +122,9 @@ mod api {
   }
 
   impl Response {
-    pub fn embed(&self) -> Result<CreateEmbed, fmt::Error> {
-      let title = lib::html::strip(&self.title());
-      let desc = lib::html::strip(&self.description()?);
+    pub fn embed(&self) -> fmt::Result<CreateEmbed> {
+      let title = util::html::strip(&self.title());
+      let desc = util::html::strip(&self.description()?);
       let embed = CreateEmbed::new().url(&self.url).title(title).description(desc);
 
       match &self.image {
@@ -140,7 +140,7 @@ mod api {
       }
     }
 
-    fn description(&self) -> Result<String, fmt::Error> {
+    fn description(&self) -> fmt::Result<String> {
       let mut acc = String::new();
 
       let directors = self.director.iter();

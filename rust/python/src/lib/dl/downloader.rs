@@ -1,9 +1,9 @@
 use std::path::Path;
 
-use lib::task;
 use pyo3::{exceptions::*, prelude::*, types::*};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
+use util::task;
 
 use super::download::*;
 

@@ -1,0 +1,15 @@
+[package]
+name = "util"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ego-tree.workspace = true
+futures.workspace = true
+reqwest.workspace = true
+scraper.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true

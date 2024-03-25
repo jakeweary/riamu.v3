@@ -7,9 +7,9 @@ use serde::Deserialize;
 use serenity::all::*;
 use url::Url;
 
-use crate::client::{err, Context, Result};
+use crate::client::{command, err, Context, Result};
 
-#[macros::command(desc = "Look up a term on Urban Dictionary")]
+#[command(desc = "Look up a term on Urban Dictionary")]
 pub async fn run(ctx: &Context<'_>, term: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
@@ -51,7 +51,7 @@ impl Json {
     let url = "https://api.urbandictionary.com/v0/define";
     let url = Url::parse_with_params(url, &[("term", &term)]).unwrap();
 
-    let mut acc = Json::default();
+    let mut acc = Self::default();
 
     for page in 1..=pages {
       let mut url = url.clone();
@@ -59,7 +59,7 @@ impl Json {
       tracing::trace!(%url);
 
       let resp = reqwest::get(url).await?.error_for_status()?;
-      let json = resp.json::<Json>().await?;
+      let json = resp.json::<Self>().await?;
 
       if json.list.is_empty() {
         break;

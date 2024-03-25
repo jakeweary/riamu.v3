@@ -1,12 +1,12 @@
-use lib::api::_4chan::{catalog, parse_url};
-use lib::api::_4chan::{catalog::Catalog, thread::Thread};
-use lib::fmt::plural::Plural;
-use lib::{fmt, html};
+use api::_4chan::{catalog, parse_url};
+use api::_4chan::{catalog::Catalog, thread::Thread};
+use fmt::plural::Plural;
 use serenity::all::*;
+use util::html;
 
-use crate::client::{err, Context, Result};
+use crate::client::{command, err, Context, Result};
 
-#[macros::command(desc = "Repost something from 4chan")]
+#[command(desc = "Repost something from 4chan")]
 pub async fn repost(ctx: &Context<'_>, #[desc = "4chan thread url"] url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
@@ -22,7 +22,7 @@ pub async fn repost(ctx: &Context<'_>, #[desc = "4chan thread url"] url: &str) -
   reply(ctx, domain, board_id, post_id, &thread).await
 }
 
-#[macros::command(desc = "Random 4chan post")]
+#[command(desc = "Random 4chan post")]
 pub async fn random(
   ctx: &Context<'_>,
   #[desc = "4chan board id"] board: &str,

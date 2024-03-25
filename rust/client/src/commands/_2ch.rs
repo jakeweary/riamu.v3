@@ -1,14 +1,14 @@
 use std::iter;
 
-use lib::api::_2ch::{catalog, parse_url};
-use lib::api::_2ch::{catalog::Catalog, thread::Thread};
-use lib::fmt::plural::Plural;
-use lib::{fmt, html};
+use api::_2ch::{catalog, parse_url};
+use api::_2ch::{catalog::Catalog, thread::Thread};
+use fmt::plural::Plural;
 use serenity::all::*;
+use util::html;
 
-use crate::client::{err, Context, Result};
+use crate::client::{command, err, Context, Result};
 
-#[macros::command(desc = "Repost something from 2ch")]
+#[command(desc = "Repost something from 2ch")]
 pub async fn repost(ctx: &Context<'_>, url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
@@ -24,7 +24,7 @@ pub async fn repost(ctx: &Context<'_>, url: &str) -> Result<()> {
   reply(ctx, domain, board_id, post_id, &thread).await
 }
 
-#[macros::command(desc = "Random 2ch post")]
+#[command(desc = "Random 2ch post")]
 pub async fn random(
   ctx: &Context<'_>,
   #[desc = "2ch board id"] board: &str,

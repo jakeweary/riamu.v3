@@ -1,0 +1,10 @@
+[package]
+name = "regex-ext"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+regex.workspace = true

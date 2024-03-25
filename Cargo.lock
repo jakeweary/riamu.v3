@@ -61,6 +61,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "api"
+version = "3.0.0-alpha"
+dependencies = [
+ "ego-tree",
+ "rand",
+ "regex",
+ "reqwest",
+ "scraper",
+ "serde",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "arrayvec"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -200,6 +214,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "cache"
+version = "3.0.0-alpha"
+dependencies = [
+ "filetime",
+ "fmt",
+ "inotify",
+ "lru",
+ "parking_lot",
+ "tracing",
+ "url",
+ "util",
+]
+
+[[package]]
+name = "cairo-ext"
+version = "3.0.0-alpha"
+dependencies = [
+ "cairo-rs",
+ "color",
+ "rayon",
+]
+
+[[package]]
 name = "cairo-rs"
 version = "0.18.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -310,6 +347,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "client-macros"
+version = "3.0.0-alpha"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.53",
+]
+
+[[package]]
+name = "color"
+version = "3.0.0-alpha"
+
+[[package]]
 name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -369,6 +420,25 @@ name = "crossbeam-channel"
 version = "0.5.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab3db02a9c5b5121e1e42fbdb1aeb65f5e02624cc58c43f2884c6ccac0b82f95"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-deque"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "613f8cc01fe9cf1a3eb3d7f488fd2fa8388403e97039e2f73692932e291a770d"
+dependencies = [
+ "crossbeam-epoch",
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-epoch"
+version = "0.9.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b82ac4a3c2ca9c3460964f020e1402edd5753411d7737aa39c3714ad1b5420e"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -521,6 +591,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "discord"
+version = "3.0.0-alpha"
+dependencies = [
+ "regex",
+ "regex-ext",
+]
+
+[[package]]
 name = "dotenvy"
 version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -614,6 +692,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25cbce373ec4653f1a01a31e8a5e5ec0c622dc27ff9c4e6606eefef5cbbed4a5"
 
 [[package]]
+name = "ffmpeg"
+version = "3.0.0-alpha"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "filetime"
 version = "0.2.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -651,6 +737,10 @@ dependencies = [
  "futures-sink",
  "spin 0.9.8",
 ]
+
+[[package]]
+name = "fmt"
+version = "3.0.0-alpha"
 
 [[package]]
 name = "fnv"
@@ -800,6 +890,10 @@ checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
 dependencies = [
  "byteorder",
 ]
+
+[[package]]
+name = "gcra"
+version = "3.0.0-alpha"
 
 [[package]]
 name = "generic-array"
@@ -1212,29 +1306,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
-name = "lib"
-version = "3.0.0-alpha"
-dependencies = [
- "c",
- "cairo-rs",
- "chrono",
- "ego-tree",
- "futures",
- "itertools",
- "rand",
- "rand_core",
- "regex",
- "reqwest",
- "scraper",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "url",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.153"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1290,16 +1361,6 @@ name = "mac"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
-
-[[package]]
-name = "macros"
-version = "3.0.0-alpha"
-dependencies = [
- "darling",
- "proc-macro2",
- "quote",
- "syn 2.0.53",
-]
 
 [[package]]
 name = "markup5ever"
@@ -1950,11 +2011,11 @@ name = "python"
 version = "3.0.0-alpha"
 dependencies = [
  "itertools",
- "lib",
  "log",
  "pyo3",
  "tokio",
  "tracing",
+ "util",
 ]
 
 [[package]]
@@ -1994,6 +2055,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "random"
+version = "3.0.0-alpha"
+dependencies = [
+ "rand_core",
+]
+
+[[package]]
+name = "rayon"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b418a60154510ca1a002a752ca9714984e21e4241e804d32555251faf8b78ffa"
+dependencies = [
+ "either",
+ "rayon-core",
+]
+
+[[package]]
+name = "rayon-core"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
+dependencies = [
+ "crossbeam-deque",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -2044,6 +2132,13 @@ dependencies = [
  "aho-corasick",
  "memchr",
  "regex-syntax 0.8.2",
+]
+
+[[package]]
+name = "regex-ext"
+version = "3.0.0-alpha"
+dependencies = [
+ "regex",
 ]
 
 [[package]]
@@ -2103,18 +2198,25 @@ dependencies = [
 name = "riamu"
 version = "3.0.0-alpha"
 dependencies = [
+ "api",
  "c",
+ "cache",
+ "cairo-ext",
  "cairo-rs",
  "chrono",
+ "client-macros",
+ "color",
+ "discord",
  "ego-tree",
+ "ffmpeg",
  "filetime",
+ "fmt",
  "futures",
+ "gcra",
  "inotify",
  "itertools",
- "lib",
  "log",
  "lru",
- "macros",
  "pango",
  "pangocairo",
  "parking_lot",
@@ -2122,7 +2224,9 @@ dependencies = [
  "pyo3",
  "python",
  "rand",
+ "random",
  "regex",
+ "regex-ext",
  "reqwest",
  "scraper",
  "serde",
@@ -2135,6 +2239,8 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
+ "util",
+ "weather",
 ]
 
 [[package]]
@@ -3258,6 +3364,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
+name = "util"
+version = "3.0.0-alpha"
+dependencies = [
+ "ego-tree",
+ "futures",
+ "reqwest",
+ "scraper",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3389,6 +3507,23 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "weather"
+version = "3.0.0-alpha"
+dependencies = [
+ "c",
+ "cairo-ext",
+ "cairo-rs",
+ "chrono",
+ "color",
+ "discord",
+ "itertools",
+ "reqwest",
+ "serde",
+ "thiserror",
+ "url",
 ]
 
 [[package]]

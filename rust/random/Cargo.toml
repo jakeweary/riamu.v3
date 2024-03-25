@@ -1,0 +1,10 @@
+[package]
+name = "random"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rand_core.workspace = true

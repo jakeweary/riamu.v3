@@ -3,27 +3,26 @@ use std::fmt::Write;
 use std::io::Cursor;
 use std::time::Duration;
 
+use ::cache::Name;
 use cairo::glib;
+use cairo_ext::{ContextExt, ImageSurfaceExt};
+use discord::link::{self, Link};
+use fmt::num::Format as _;
 use futures::StreamExt;
-use lib::cairo::blur::accurate::gaussian_blur;
-use lib::cairo::ext::ContextExt;
-use lib::discord::link::{self, Link};
-use lib::fmt::num::Format as _;
-use lib::{ffmpeg, fmt, task};
 use pangocairo::prelude::FontMapExt;
 use python::lib::dz;
 use serenity::all::*;
 use url::Url;
+use util::task;
 
-use crate::cache::Name;
-use crate::client::{err, Context, Result};
+use crate::client::{command, err, Context, Result};
 
-#[macros::command(desc = "Download a song from Deezer (tries to upload it directly to Discord)")]
+#[command(desc = "Download a song from Deezer (tries to upload it directly to Discord)")]
 pub async fn as_file(ctx: &Context<'_>, #[desc = "A search query or a Deezer/Spotify link"] query: &str) -> Result<()> {
   deezer(ctx, query, false).await
 }
 
-#[macros::command(desc = "Download a song from Deezer (gives a direct link and a nice looking banner)")]
+#[command(desc = "Download a song from Deezer (gives a direct link and a nice looking banner)")]
 pub async fn as_direct_link(
   ctx: &Context<'_>,
   #[desc = "A search query or a Deezer/Spotify link"] query: &str,
@@ -244,16 +243,16 @@ fn render(path: impl AsRef<OsStr>) -> Result<cairo::ImageSurface> {
 
   let background = {
     let mut img = cairo::ImageSurface::create(cairo::Format::Rgb24, IMAGE_W, IMAGE_H + 20)?;
-    let cc = cairo::Context::new(&img)?;
 
+    let cc = cairo::Context::new(&img)?;
     cc.translate(img.width() as f64 / 2.0, img.height() as f64 / 2.0);
     cc.scale1(img.width() as f64 / cover.width() as f64);
     cc.translate(-cover.width() as f64 / 2.0, -cover.height() as f64 / 2.0);
     cc.set_source_surface(&cover, 0.0, 0.0)?;
     cc.paint()?;
-
     drop(cc);
-    gaussian_blur(&mut img, 1.5)?;
+
+    img.gaussian_blur(1.5)?;
 
     img
   };

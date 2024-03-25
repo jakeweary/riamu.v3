@@ -1,18 +1,18 @@
 use std::time::Duration;
 
+use ::cache::Name;
+use discord::link;
+use fmt::num::Format as _;
 use futures::StreamExt;
-use lib::discord::link;
-use lib::fmt::num::Format as _;
 use serde::Deserialize;
 use serde_json::json;
 use serenity::all::*;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
-use crate::cache::Name;
-use crate::client::{err, Context, Result};
+use crate::client::{command, err, Context, Result};
 
-#[macros::command(desc = "Download a video from TikTok")]
+#[command(desc = "Download a video from TikTok")]
 pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

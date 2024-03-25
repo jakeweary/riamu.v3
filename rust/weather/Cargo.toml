@@ -1,0 +1,20 @@
+[package]
+name = "weather"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+c.workspace = true
+cairo-ext.workspace = true
+cairo-rs.workspace = true
+chrono.workspace = true
+color.workspace = true
+discord.workspace = true
+itertools.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+url.workspace = true

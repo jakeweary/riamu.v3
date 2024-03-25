@@ -1,15 +1,14 @@
-use std::fmt::{self, Write};
-use std::result::Result as StdResult;
+use std::fmt::Write;
 use std::time::Instant;
 
+use fmt::num::Format as _;
 use futures::StreamExt;
-use lib::fmt::num::Format as _;
-use lib::random::{Random, XorShift64};
+use random::{Random, XorShift64};
 use serenity::all::*;
 
-use crate::client::{Context, Result};
+use crate::client::{command, Context, Result};
 
-#[macros::command(desc = "Measure my connection speed to Discord servers")]
+#[command(desc = "Measure my connection speed to Discord servers")]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
@@ -44,7 +43,7 @@ pub async fn run(ctx: &Context<'_>) -> Result<()> {
   Ok(())
 }
 
-fn content(bytes: u64, upload: f64, download: f64) -> StdResult<String, fmt::Error> {
+fn content(bytes: u64, upload: f64, download: f64) -> fmt::Result<String> {
   #[rustfmt::skip]
   let line = |acc: &mut dyn Write, label: &str, bytes_per_second: f64| {
     let si = (8.0 * bytes_per_second).si();

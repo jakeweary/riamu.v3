@@ -6,7 +6,6 @@
 
 use tokio::runtime::Builder as Runtime;
 
-mod cache;
 mod client;
 mod commands;
 mod db;

@@ -1,7 +1,7 @@
 use std::fmt::{self, Display, Formatter};
 
 use ::serenity::all as serenity;
-use lib::hash::splitmix64;
+use util::hash::splitmix64;
 
 use super::{commands, Client, Command};
 

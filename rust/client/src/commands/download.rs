@@ -2,18 +2,18 @@ use std::borrow::Cow;
 use std::time::Duration;
 use std::{fs, mem};
 
+use ::cache::Name;
+use discord::link::{self, Link};
+use fmt::num::Format as _;
 use futures::StreamExt;
-use lib::discord::link::{self, Link};
-use lib::fmt::num::Format as _;
-use lib::{fmt, task};
 use python::lib::dl::{self, *};
 use serenity::all::*;
 use url::Url;
+use util::task;
 
-use crate::cache::Name;
-use crate::client::{err, Context, Result};
+use crate::client::{command, err, Context, Result};
 
-#[macros::command(desc = "Download a media file from YouTube, Twitch, Twitter, etc.")]
+#[command(desc = "Download a media file from YouTube, Twitch, Twitter, etc.")]
 pub async fn run(
   ctx: &Context<'_>,
   #[desc = "A YouTube search query or a link to something"] query: &str,
