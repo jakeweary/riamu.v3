@@ -13,11 +13,15 @@ pub use self::hsl::*;
 pub use self::hsv::*;
 pub use self::lab::*;
 pub use self::lch::*;
+pub use self::lms::*;
+pub use self::rgb::*;
 
 mod hsl;
 mod hsv;
 mod lab;
 mod lch;
+mod lms;
+mod rgb;
 
 pub mod gamut_clip;
 pub mod helpers;

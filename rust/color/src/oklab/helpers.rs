@@ -212,19 +212,3 @@ pub mod toe {
     (x * x + K1 * x) / (K3 * (x + K2))
   }
 }
-
-pub mod srgb_transfer_function {
-  pub fn f(a: f32) -> f32 {
-    match a {
-      a if 0.0031308 < a => 1.055 * a.powf(0.4166666666666667) - 0.055,
-      a => 12.92 * a,
-    }
-  }
-
-  pub fn inv(a: f32) -> f32 {
-    match a {
-      a if 0.04045 < a => ((a + 0.055) / 1.055).powf(2.4),
-      a => a / 12.92,
-    }
-  }
-}

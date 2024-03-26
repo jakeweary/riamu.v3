@@ -40,7 +40,8 @@ const LUT: [u32; 0x100] = [
 
 #[test]
 fn test() {
-  use super::{super::convert, transfer_fns};
+  use crate::convert;
+  use crate::srgb::transfer_fns;
 
   for u in 0..=u8::MAX {
     let f = transfer_fns::f32::eotf(convert::unorm8::f32(u));

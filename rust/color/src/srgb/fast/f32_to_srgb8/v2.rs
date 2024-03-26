@@ -7,25 +7,25 @@ pub fn f32_to_srgb8(x: f32) -> u8 {
   // Clamp to [2^(-13), 1-eps]; these two values map to 0 and 1, respectively.
   // The tests are carefully written so that NaNs map to 0, same as in the reference
   // implementation.
-  let f = clamp(x, min_val, almost_one);
+  let f = helpers::clamp(x, min_val, almost_one);
 
   let i = (f.to_bits() - min_val.to_bits()) >> 20;
   let packed = unsafe { *LUT.get_unchecked(i as usize) };
-  lerp(packed, f)
+  helpers::lerp(packed, f)
 }
 
 pub fn f32x4_to_srgb8x4(x: [f32; 4]) -> [u8; 4] {
   #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-  if is_x86_feature_detected!("sse4.1") {
-    return unsafe { f32x4_to_srgb8x4_sse41(x) };
+  if is_x86_feature_detected!("sse2") {
+    return unsafe { f32x4_to_srgb8x4_sse2(x) };
   }
 
   x.map(f32_to_srgb8)
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[target_feature(enable = "sse4.1")]
-unsafe fn f32x4_to_srgb8x4_sse41(x: [f32; 4]) -> [u8; 4] {
+#[target_feature(enable = "sse2")]
+unsafe fn f32x4_to_srgb8x4_sse2(x: [f32; 4]) -> [u8; 4] {
   #[cfg(target_arch = "x86")]
   use std::arch::x86 as simd;
   #[cfg(target_arch = "x86_64")]
@@ -49,11 +49,9 @@ unsafe fn f32x4_to_srgb8x4_sse41(x: [f32; 4]) -> [u8; 4] {
   let acc = simd::_mm_and_si128(acc, transmute([0x000000ff; 4]));
   let acc = simd::_mm_or_si128(acc, transmute([0x02000000; 4]));
   let acc = simd::_mm_madd_epi16(acc, transmute(values));
+  let acc = simd::_mm_srli_epi32(acc, 16);
 
-  // Extract 4 bytes
-  let acc = simd::_mm_shuffle_epi8(acc, transmute(0x0e0a0602_u128));
-  let acc = simd::_mm_extract_epi32::<0>(acc);
-  return transmute(acc);
+  return helpers::u32x4_to_u8x4(transmute(acc));
 }
 
 #[rustfmt::skip]
