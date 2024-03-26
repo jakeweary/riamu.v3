@@ -31,7 +31,7 @@ impl<'a> Display for Name<'a> {
     // TODO: there should be a better way than this
     // would be nice to keep actual brackets if they don't break formatting
     // but that requires to understand exact conditions when it breaks
-    re.replace_fmt(f, self.0, |f, m| match m.as_str() {
+    re.replace_all_fmt(f, self.0, |f, caps| match &caps[0] {
       "[" => f.write_str("\u{298b}"),
       "]" => f.write_str("\u{298c}"),
       _ => Ok(()),
@@ -44,7 +44,7 @@ impl<'a> Display for Url<'a> {
     static RE: OnceLock<Regex> = OnceLock::new();
     let re = RE.get_or_init(|| Regex::new(r"\(|\)").unwrap());
 
-    re.replace_fmt(f, self.0, |f, m| match m.as_str() {
+    re.replace_all_fmt(f, self.0, |f, caps| match &caps[0] {
       "(" => f.write_str("%28"),
       ")" => f.write_str("%29"),
       _ => Ok(()),

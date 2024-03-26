@@ -1,8 +1,9 @@
-use std::borrow::Cow;
+use std::fmt::{self, Display, Formatter};
 use std::sync::OnceLock;
 
 use chrono::DateTime;
-use regex::{Captures, Regex};
+use regex::Regex;
+use regex_ext::RegexExt;
 use serde::Deserialize;
 use serenity::all::*;
 use url::Url;
@@ -84,20 +85,14 @@ impl Definition {
     CreateEmbed::new()
       .url(term_link(&self.word))
       .title(&self.word)
-      .description(insert_term_links(&desc))
+      .description(TermLinks(&desc).to_string())
       .footer(CreateEmbedFooter::new(footer))
       .timestamp(time)
   }
 }
 
-fn insert_term_links(text: &str) -> Cow<'_, str> {
-  static RE: OnceLock<Regex> = OnceLock::new();
-  let re = RE.get_or_init(|| Regex::new(r"\[(.+?)\]").unwrap());
-
-  re.replace_all(text, |captures: &Captures<'_>| {
-    let term = captures.get(1).unwrap().as_str();
-    format!("[{}]({})", term, term_link(term))
-  })
+fn sanitize(text: &str) -> String {
+  text.trim().replace('*', r"\*").replace('_', r"\_")
 }
 
 fn term_link(term: &str) -> Url {
@@ -105,6 +100,16 @@ fn term_link(term: &str) -> Url {
   Url::parse_with_params(url, &[("term", term)]).unwrap()
 }
 
-fn sanitize(text: &str) -> String {
-  text.trim().replace('*', r"\*").replace('_', r"\_")
+struct TermLinks<'a>(&'a str);
+
+impl Display for TermLinks<'_> {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    let re = RE.get_or_init(|| Regex::new(r"\[(.+?)\]").unwrap());
+
+    re.replace_all_fmt(f, self.0, |f, caps| {
+      let (_, [term]) = caps.extract();
+      write!(f, "[{}]({})", term, term_link(term))
+    })
+  }
 }
