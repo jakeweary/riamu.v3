@@ -11,9 +11,9 @@ use serenity::all::*;
 use url::Url;
 use util::task;
 
-use crate::client::{command, err, Context, Result};
+use crate::client::{err, Context, Result};
 
-#[command(desc = "Download a media file from YouTube, Twitch, Twitter, etc.")]
+#[macros::command(desc = "Download a media file from YouTube, Twitch, Twitter, etc.")]
 pub async fn run(
   ctx: &Context<'_>,
   #[desc = "A YouTube search query or a link to something"] query: &str,

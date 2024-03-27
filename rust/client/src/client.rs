@@ -10,8 +10,6 @@ use futures::{FutureExt, TryFutureExt};
 use pyo3::{PyErr, Python};
 use tokio::signal::{self, unix::*};
 
-pub use client_macros::*;
-
 use crate::commands::tree as commands;
 use crate::db;
 

@@ -1,8 +1,8 @@
 use serenity::all::*;
 
-use crate::client::{command, err, Context, Result};
+use crate::client::{err, Context, Result};
 
-#[command(desc = "Get someone's avatar")]
+#[macros::command(desc = "Get someone's avatar")]
 pub async fn avatar(ctx: &Context<'_>, user: &User) -> Result<()> {
   let Some(url) = user.avatar_url() else {
     err::message!("the user doesn't have a custom avatar");
@@ -11,7 +11,7 @@ pub async fn avatar(ctx: &Context<'_>, user: &User) -> Result<()> {
   reply(ctx, url).await
 }
 
-#[command(desc = "Get someone's banner")]
+#[macros::command(desc = "Get someone's banner")]
 pub async fn banner(ctx: &Context<'_>, user: &User) -> Result<()> {
   let user = ctx.serenity.http.get_user(user.id).await?;
   let Some(url) = user.banner_url() else {

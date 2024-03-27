@@ -11,14 +11,14 @@ use serenity::all::*;
 use url::Url;
 use util::task;
 
-use crate::client::{command, err, Context, Result};
+use crate::client::{err, Context, Result};
 
-#[command(desc = "Download a song from Deezer (tries to upload it directly to Discord)")]
+#[macros::command(desc = "Download a song from Deezer (tries to upload it directly to Discord)")]
 pub async fn as_file(ctx: &Context<'_>, #[desc = "A search query or a Deezer/Spotify link"] query: &str) -> Result<()> {
   deezer(ctx, query, false).await
 }
 
-#[command(desc = "Download a song from Deezer (gives a direct link and a nice looking banner)")]
+#[macros::command(desc = "Download a song from Deezer (gives a direct link and a nice looking banner)")]
 pub async fn as_direct_link(
   ctx: &Context<'_>,
   #[desc = "A search query or a Deezer/Spotify link"] query: &str,

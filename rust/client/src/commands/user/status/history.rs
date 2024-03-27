@@ -1,10 +1,10 @@
 use serenity::all::*;
 use util::task;
 
-use crate::client::{command, err, Context, Result};
+use crate::client::{err, Context, Result};
 use crate::db::statuses;
 
-#[command(desc = "Show one month of someone's status history")]
+#[macros::command(desc = "Show one month of someone's status history")]
 pub async fn run(
   ctx: &Context<'_>,
   #[desc = "The user of interest"] user: &User,

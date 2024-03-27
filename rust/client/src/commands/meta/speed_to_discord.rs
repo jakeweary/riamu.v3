@@ -6,9 +6,9 @@ use futures::StreamExt;
 use random::{Random, XorShift64};
 use serenity::all::*;
 
-use crate::client::{command, Context, Result};
+use crate::client::{Context, Result};
 
-#[command(desc = "Measure my connection speed to Discord servers")]
+#[macros::command(desc = "Measure my connection speed to Discord servers")]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

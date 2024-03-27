@@ -5,9 +5,9 @@ use rand::prelude::*;
 use random::{Random, XorShift64};
 use serenity::all::*;
 
-use crate::client::{command, Context, Result};
+use crate::client::{Context, Result};
 
-#[command(desc = "Random integer in [min, max] range, defaults to [1, 100]")]
+#[macros::command(desc = "Random integer in [min, max] range, defaults to [1, 100]")]
 pub async fn int(ctx: &Context<'_>, min: Option<i64>, max: Option<i64>) -> Result<()> {
   let (min, max) = (min.unwrap_or(1), max.unwrap_or(100));
   let n = thread_rng().gen_range(min..=max);
@@ -15,7 +15,7 @@ pub async fn int(ctx: &Context<'_>, min: Option<i64>, max: Option<i64>) -> Resul
   reply(ctx, |msg| msg.content(text)).await
 }
 
-#[command(desc = "Random real number in [min, max) range, defaults to [0, 1)")]
+#[macros::command(desc = "Random real number in [min, max) range, defaults to [0, 1)")]
 pub async fn real(ctx: &Context<'_>, min: Option<f64>, max: Option<f64>) -> Result<()> {
   let (min, max) = (min.unwrap_or(0.0), max.unwrap_or(1.0));
   let n = thread_rng().gen_range(min..max);
@@ -23,7 +23,7 @@ pub async fn real(ctx: &Context<'_>, min: Option<f64>, max: Option<f64>) -> Resu
   reply(ctx, |msg| msg.content(text)).await
 }
 
-#[command(desc = "Random color")]
+#[macros::command(desc = "Random color")]
 pub async fn color(ctx: &Context<'_>) -> Result<()> {
   let color = random::<u32>() & 0xffffff;
   let [b, g, r, _] = color.to_le_bytes();
@@ -32,7 +32,7 @@ pub async fn color(ctx: &Context<'_>) -> Result<()> {
   reply(ctx, |msg| msg.embed(embed)).await
 }
 
-#[command(desc = "Take a card from a shuffled standard 52-card deck")]
+#[macros::command(desc = "Take a card from a shuffled standard 52-card deck")]
 pub async fn card(
   ctx: &Context<'_>,
   #[min = 1]
@@ -59,7 +59,7 @@ pub async fn card(
   reply(ctx, |msg| msg.content(acc)).await
 }
 
-#[command(desc = "Toss a coin")]
+#[macros::command(desc = "Toss a coin")]
 pub async fn coin(
   ctx: &Context<'_>,
   #[min = 1]
@@ -103,7 +103,7 @@ pub async fn coin(
   reply(ctx, |msg| msg.content(text)).await
 }
 
-#[command(desc = "Roll a six-sided die")]
+#[macros::command(desc = "Roll a six-sided die")]
 pub async fn die(
   ctx: &Context<'_>,
   #[min = 1]
@@ -140,7 +140,7 @@ pub async fn die(
   reply(ctx, |msg| msg.content(text)).await
 }
 
-#[command(desc = "Ask the magic 8 ball")]
+#[macros::command(desc = "Ask the magic 8 ball")]
 pub async fn eightball(ctx: &Context<'_>, #[desc = "A yes–no question"] question: &str) -> Result<()> {
   pub static ANSWERS: [&str; 20] = [
     "it is certain",

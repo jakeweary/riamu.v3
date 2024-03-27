@@ -3,9 +3,9 @@ use std::process::Command;
 use serenity::all::*;
 use util::task;
 
-use crate::client::{command, Context, Result};
+use crate::client::{Context, Result};
 
-#[command(desc = "Measure my connection speed (owner only)", owner_only)]
+#[macros::command(desc = "Measure my connection speed (owner only)", owner_only)]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

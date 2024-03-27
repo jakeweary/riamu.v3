@@ -3,9 +3,9 @@ use std::borrow::Cow;
 use serenity::all::*;
 use util::text::style;
 
-use crate::client::{command, Choice, Context, Result};
+use crate::client::{Context, Result};
 
-#[derive(Choice)]
+#[derive(macros::Choice)]
 enum Style {
   #[name = "Regional indicators"]
   Regional,
@@ -39,7 +39,7 @@ enum Style {
   SansSerifBoldItalic,
 }
 
-#[command(desc = "Text style")]
+#[macros::command(desc = "Text style")]
 pub async fn run(ctx: &Context<'_>, style: Style, input: &str) -> Result<()> {
   let f = match style {
     Style::Regional => style::regional_indicators,

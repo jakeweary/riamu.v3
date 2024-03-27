@@ -4,9 +4,9 @@ use fmt::plural::Plural;
 use serenity::all::*;
 use util::html;
 
-use crate::client::{command, err, Context, Result};
+use crate::client::{err, Context, Result};
 
-#[command(desc = "Repost something from 4chan")]
+#[macros::command(desc = "Repost something from 4chan")]
 pub async fn repost(ctx: &Context<'_>, #[desc = "4chan thread url"] url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
@@ -22,7 +22,7 @@ pub async fn repost(ctx: &Context<'_>, #[desc = "4chan thread url"] url: &str) -
   reply(ctx, domain, board_id, post_id, &thread).await
 }
 
-#[command(desc = "Random 4chan post")]
+#[macros::command(desc = "Random 4chan post")]
 pub async fn random(
   ctx: &Context<'_>,
   #[desc = "4chan board id"] board: &str,

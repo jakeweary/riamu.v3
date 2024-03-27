@@ -6,10 +6,10 @@ use fmt::num::Format as _;
 use procfs::{process::*, *};
 use serenity::all::*;
 
-use crate::client::{command, Context, Result};
+use crate::client::{Context, Result};
 use crate::db::{self, counters::Counter};
 
-#[command(desc = "Show some technical info about me")]
+#[macros::command(desc = "Show some technical info about me")]
 pub async fn run(ctx: &Context<'_>) -> Result<()> {
   let prev = KernelStats::current()?;
   let rtt = Instant::now();

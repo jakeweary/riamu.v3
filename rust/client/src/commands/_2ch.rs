@@ -6,9 +6,9 @@ use fmt::plural::Plural;
 use serenity::all::*;
 use util::html;
 
-use crate::client::{command, err, Context, Result};
+use crate::client::{err, Context, Result};
 
-#[command(desc = "Repost something from 2ch")]
+#[macros::command(desc = "Repost something from 2ch")]
 pub async fn repost(ctx: &Context<'_>, url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
@@ -24,7 +24,7 @@ pub async fn repost(ctx: &Context<'_>, url: &str) -> Result<()> {
   reply(ctx, domain, board_id, post_id, &thread).await
 }
 
-#[command(desc = "Random 2ch post")]
+#[macros::command(desc = "Random 2ch post")]
 pub async fn random(
   ctx: &Context<'_>,
   #[desc = "2ch board id"] board: &str,

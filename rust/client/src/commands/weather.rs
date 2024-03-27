@@ -2,9 +2,9 @@ use serenity::all::*;
 use util::task;
 use weather::{api::Api, render::render};
 
-use crate::client::{command, err, Context, Result};
+use crate::client::{err, Context, Result};
 
-#[command(desc = "Weather forecast")]
+#[macros::command(desc = "Weather forecast")]
 pub async fn run(
   ctx: &Context<'_>,
   #[desc = "The city name, with an optional country code (e.g.: London, GB; Москва; 東京)"] location: &str,

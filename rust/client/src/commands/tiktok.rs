@@ -10,9 +10,9 @@ use serenity::all::*;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
-use crate::client::{command, err, Context, Result};
+use crate::client::{err, Context, Result};
 
-#[command(desc = "Download a video from TikTok")]
+#[macros::command(desc = "Download a video from TikTok")]
 pub async fn run(ctx: &Context<'_>, url: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 

@@ -4,9 +4,9 @@ use std::{fs, io};
 use serenity::all::*;
 use util::task;
 
-use crate::client::{command, err, Context, Result};
+use crate::client::{err, Context, Result};
 
-#[command(desc = "Run a shell command (owner only)", owner_only)]
+#[macros::command(desc = "Run a shell command (owner only)", owner_only)]
 pub async fn run(ctx: &Context<'_>, command: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
