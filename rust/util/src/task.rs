@@ -3,7 +3,7 @@
 
 use std::future::Future;
 
-use tokio::task::JoinHandle;
+use tokio::task::{self, JoinHandle};
 use tracing::Instrument;
 
 pub fn spawn<T>(future: T) -> JoinHandle<T::Output>
@@ -12,7 +12,7 @@ where
   T::Output: Send + 'static,
 {
   let future = future.in_current_span();
-  tokio::task::spawn(future)
+  task::spawn(future)
 }
 
 pub fn spawn_blocking<F, R>(f: F) -> JoinHandle<R>
@@ -21,7 +21,7 @@ where
   R: Send + 'static,
 {
   let span = tracing::Span::current();
-  tokio::task::spawn_blocking(move || {
+  task::spawn_blocking(move || {
     let _span = span.entered();
     f()
   })

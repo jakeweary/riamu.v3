@@ -14,9 +14,13 @@ confusable_idents = "allow"
 mixed_script_confusables = "allow"
 
 [workspace.lints.clippy]
+absolute_paths = "warn"
 excessive_precision = "allow"
 manual_range_contains = "allow"
 let_and_return = "allow"
+too_many_arguments = "allow"
+transmute_int_to_char = "allow"
+transmute_num_to_bytes = "allow"
 
 [workspace.dependencies]
 api = { path = "rust/api" }

@@ -1,3 +1,5 @@
+use std::result;
+
 pub use error::*;
 pub use handle::*;
 
@@ -6,7 +8,7 @@ use crate::bindings as c;
 mod error;
 mod handle;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = result::Result<T, Error>;
 
 pub fn version_string() -> String {
   let [major, minor, micro] = version();

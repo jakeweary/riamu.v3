@@ -1,0 +1,1 @@
+absolute-paths-allowed-crates = ["c", "python", "tokio"]

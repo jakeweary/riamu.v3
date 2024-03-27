@@ -1,3 +1,4 @@
+use std::error;
 use std::ffi::CStr;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ptr::NonNull;
@@ -26,7 +27,7 @@ impl Display for Error {
   }
 }
 
-impl std::error::Error for Error {}
+impl error::Error for Error {}
 
 // ---
 
@@ -61,7 +62,7 @@ impl Drop for GError {
   }
 }
 
-impl std::error::Error for GError {}
+impl error::Error for GError {}
 
 unsafe impl Send for GError {}
 unsafe impl Sync for GError {}

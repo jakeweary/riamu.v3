@@ -30,7 +30,7 @@ mod user {
   }
 }
 
-pub fn build() -> client::Commands {
+pub fn tree() -> client::Commands {
   client::commands! {
     // downloading, uploading, etc.
     "download" => download::run,

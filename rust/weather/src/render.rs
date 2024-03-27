@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, result};
 
 use c::rsvg;
 use cairo::*;
@@ -14,7 +14,7 @@ mod iso3166;
 mod range;
 mod util;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]

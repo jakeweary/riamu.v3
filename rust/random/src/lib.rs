@@ -1,4 +1,5 @@
 use std::time::{self, Duration, SystemTime};
+use std::{ptr, slice};
 
 pub use xorshift32::*;
 pub use xorshift64::*;
@@ -37,7 +38,7 @@ fn fill<const N: usize>(dst: &mut [u8], mut src: impl FnMut() -> [u8; N]) {
 
   let (chunks, last) = dst.split_at_mut(n * N);
   let chunks_ptr = chunks.as_mut_ptr().cast();
-  let chunks = unsafe { std::slice::from_raw_parts_mut(chunks_ptr, n) };
+  let chunks = unsafe { slice::from_raw_parts_mut(chunks_ptr, n) };
 
   for dst in chunks {
     *dst = src();
@@ -45,7 +46,7 @@ fn fill<const N: usize>(dst: &mut [u8], mut src: impl FnMut() -> [u8; N]) {
 
   let src = src();
   let (src, dst, n) = (src.as_ptr(), last.as_mut_ptr(), last.len());
-  unsafe { std::ptr::copy_nonoverlapping(src, dst, n) }
+  unsafe { ptr::copy_nonoverlapping(src, dst, n) }
 }
 
 fn unix_time() -> Duration {

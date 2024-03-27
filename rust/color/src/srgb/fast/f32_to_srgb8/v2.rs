@@ -51,7 +51,7 @@ unsafe fn f32x4_to_srgb8x4_sse2(x: [f32; 4]) -> [u8; 4] {
   let acc = simd::_mm_madd_epi16(acc, transmute(values));
   let acc = simd::_mm_srli_epi32(acc, 16);
 
-  return helpers::u32x4_to_u8x4(transmute(acc));
+  helpers::u32x4_to_u8x4(transmute(acc))
 }
 
 #[rustfmt::skip]

@@ -11,13 +11,13 @@
 //! [2]: https://blog.ian.stapletoncordas.co/2018/12/understanding-generic-cell-rate-limiting
 //! [3]: https://smarketshq.com/implementing-gcra-in-python-5df1f11aaa96
 
-use std::ops::*;
 use std::time::{self, Duration, SystemTime};
+use std::{ops::*, result};
 
 pub use self::{hours as h, minutes as m, seconds as s};
 pub use self::{micros as us, millis as ms, nanos as ns};
 
-pub type Result = std::result::Result<(), Retry>;
+pub type Result = result::Result<(), Retry>;
 pub type ResultAndInfo = (Result, Info);
 
 #[cfg_attr(test, derive(Debug, PartialEq))]

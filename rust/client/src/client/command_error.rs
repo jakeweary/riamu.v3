@@ -1,13 +1,16 @@
+use std::error::Error;
+use std::fmt::{self, Debug, Display, Formatter};
+
 #[derive(Debug)]
 pub enum CommandError {
   Message(String),
   Timeout,
 }
 
-impl std::error::Error for CommandError {}
-impl std::fmt::Display for CommandError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    std::fmt::Debug::fmt(self, f)
+impl Error for CommandError {}
+impl Display for CommandError {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    Debug::fmt(self, f)
   }
 }
 

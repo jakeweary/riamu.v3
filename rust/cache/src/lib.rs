@@ -132,7 +132,7 @@ impl LruFileCache {
       tracing::debug!("too big");
       Ok(None)
     } else {
-      std::fs::copy(path, self.working_dir.join(&hashed_name))?;
+      fs::copy(path, self.working_dir.join(&hashed_name))?;
       self.state.lock().push(hashed_name, size);
       self.log_stats();
       Ok(Some(url))

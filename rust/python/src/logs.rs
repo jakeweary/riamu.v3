@@ -2,6 +2,7 @@ use std::path::Path;
 use std::{env, iter};
 
 use itertools::Itertools;
+use log::Level;
 use pyo3::{prelude::*, types::*};
 
 const REDIRECT: &str = r#"
@@ -66,13 +67,13 @@ impl<'a> Record<'a> {
     );
   }
 
-  fn level(&self) -> log::Level {
+  fn level(&self) -> Level {
     match self.levelno / 10 {
-      0 => log::Level::Trace,
-      1 => log::Level::Debug,
-      2 => log::Level::Info,
-      3 => log::Level::Warn,
-      _ => log::Level::Error,
+      0 => Level::Trace,
+      1 => Level::Debug,
+      2 => Level::Info,
+      3 => Level::Warn,
+      _ => Level::Error,
     }
   }
 

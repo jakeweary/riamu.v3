@@ -1,3 +1,5 @@
+use std::mem;
+
 use darling::export::NestedMeta;
 use darling::{FromMeta, Result};
 use proc_macro::TokenStream;
@@ -106,7 +108,7 @@ fn command_options(function: &mut ItemFn) -> Result<Vec<proc_macro2::TokenStream
         _ => unimplemented!(),
       };
       let fn_input_args = FnInputArgs::from_list({
-        &std::mem::take(&mut fn_input.attrs)
+        &mem::take(&mut fn_input.attrs)
           .into_iter()
           .map(|attr| NestedMeta::Meta(attr.meta))
           .collect::<Vec<_>>()

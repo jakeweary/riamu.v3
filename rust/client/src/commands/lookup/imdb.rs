@@ -29,6 +29,7 @@ mod api {
   use serde::Deserialize;
   use serenity::all::*;
   use url::Url;
+  use util::html;
 
   // ---
 
@@ -123,8 +124,8 @@ mod api {
 
   impl Response {
     pub fn embed(&self) -> fmt::Result<CreateEmbed> {
-      let title = util::html::strip(&self.title());
-      let desc = util::html::strip(&self.description()?);
+      let title = html::strip(&self.title());
+      let desc = html::strip(&self.description()?);
       let embed = CreateEmbed::new().url(&self.url).title(title).description(desc);
 
       match &self.image {

@@ -1,16 +1,15 @@
 #![allow(non_snake_case)]
 
-use std::env::{self, VarError};
-use std::error::Error as StdError;
+use std::env::VarError;
 use std::path::PathBuf;
-use std::result::Result as StdResult;
+use std::{env, error, result};
 
 use serenity::all::*;
 use url::Url;
 
-type Error = Box<dyn StdError + Send + Sync>;
-type Result<T> = StdResult<T, Error>;
-type EnvResult = StdResult<String, VarError>;
+type Error = Box<dyn error::Error + Send + Sync>;
+type Result<T> = result::Result<T, Error>;
+type EnvResult = result::Result<String, VarError>;
 
 macro_rules! fallback {
   ($fallback:tt) => { $fallback };

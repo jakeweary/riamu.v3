@@ -1,9 +1,10 @@
 use std::borrow::Cow;
+use std::{fmt, result};
 
 pub mod num;
 pub mod plural;
 
-pub type Result<T> = std::result::Result<T, std::fmt::Error>;
+pub type Result<T> = result::Result<T, fmt::Error>;
 
 pub fn ellipsis(text: &str, max_len: usize) -> Cow<'_, str> {
   let mut indices = text.char_indices().skip(max_len - 1);

@@ -72,7 +72,7 @@ unsafe fn f32x4_to_srgb8x4_sse2(x: [f32; 4]) -> [u8; 4] {
   let acc1 = simd::_mm_andnot_si128(transmute(mask), acc1);
   let acc = simd::_mm_or_si128(acc0, acc1);
 
-  return helpers::u32x4_to_u8x4(transmute(acc));
+  helpers::u32x4_to_u8x4(transmute(acc))
 }
 
 #[rustfmt::skip]

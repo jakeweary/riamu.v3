@@ -1,19 +1,19 @@
+use std::io;
+
 pub use tracing::*;
 
-use tracing_subscriber::prelude::*;
 use tracing_subscriber::util::TryInitError;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{fmt, prelude::*};
 
 pub fn init() -> Result<(), TryInitError> {
-  // let console = console_subscriber::ConsoleLayer::builder().spawn();
-
-  let stderr = tracing_subscriber::fmt::layer()
+  let stderr = fmt::layer()
     .without_time()
-    .with_writer(std::io::stderr)
+    .with_writer(io::stderr)
     .with_filter(EnvFilter::from_default_env());
 
   tracing_subscriber::registry()
-    // .with(console)
+    // .with(console_subscriber::ConsoleLayer::builder().spawn())
     .with(stderr)
     .try_init()
 }

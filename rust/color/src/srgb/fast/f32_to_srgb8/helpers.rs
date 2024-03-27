@@ -38,5 +38,5 @@ pub unsafe fn u32x4_to_u8x4_sse41(x: [u32; 4]) -> [u8; 4] {
   let acc = transmute(x);
   let acc = simd::_mm_shuffle_epi8(acc, transmute(0x0c080400u128));
   let acc = simd::_mm_extract_epi32::<0>(acc);
-  return transmute(acc);
+  transmute(acc)
 }

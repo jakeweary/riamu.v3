@@ -115,7 +115,7 @@ mod api {
   }
 
   impl Success {
-    pub fn embed(&self) -> Result<CreateEmbed, std::fmt::Error> {
+    pub fn embed(&self) -> fmt::Result<CreateEmbed> {
       let url = format!("https://www.imdb.com/title/{}", self.imdb.id);
       let title = format!("{} ({})", self.title, self.year);
       let footer = format!("{} · {}", self.runtime, self.genre);
@@ -135,7 +135,7 @@ mod api {
       }
     }
 
-    fn people(&self) -> Result<String, std::fmt::Error> {
+    fn people(&self) -> fmt::Result<String> {
       let mut acc = String::new();
       writeln!(acc, "**Directors:** {}", self.director)?;
       writeln!(acc, "**Writers:** {}", self.writer)?;
@@ -143,7 +143,7 @@ mod api {
       Ok(acc)
     }
 
-    fn details(&self) -> Result<String, std::fmt::Error> {
+    fn details(&self) -> fmt::Result<String> {
       let mut acc = String::new();
       writeln!(acc, "**Countries:** {}", self.country)?;
       writeln!(acc, "**Languages:** {}", self.language)?;
@@ -153,7 +153,7 @@ mod api {
       Ok(acc)
     }
 
-    fn ratings(&self) -> Result<String, std::fmt::Error> {
+    fn ratings(&self) -> fmt::Result<String> {
       let mut acc = String::new();
       writeln!(acc, "**IMDB:** {} ({} votes)", self.imdb.rating, self.imdb.votes)?;
       for r in &self.ratings {

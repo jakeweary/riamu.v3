@@ -1,15 +1,11 @@
-use std::ffi::OsStr;
 use std::fmt::Write;
-use std::io::Cursor;
+use std::fs;
 use std::time::Duration;
 
 use ::cache::Name;
-use cairo::glib;
-use cairo_ext::{ContextExt, ImageSurfaceExt};
 use discord::link::{self, Link};
 use fmt::num::Format as _;
 use futures::StreamExt;
-use pangocairo::prelude::FontMapExt;
 use python::lib::dz;
 use serenity::all::*;
 use url::Url;
@@ -50,7 +46,7 @@ async fn deezer(ctx: &Context<'_>, query: &str, with_banner: bool) -> Result<()>
     info? // FIXME: should figure out a way to handle that PyErr
   };
 
-  let Some(Ok(file)) = std::fs::read_dir(&tempdir)?.next() else {
+  let Some(Ok(file)) = fs::read_dir(&tempdir)?.next() else {
     err::message!("failed to download");
   };
   let fpath = file.path();
@@ -79,7 +75,7 @@ async fn deezer(ctx: &Context<'_>, query: &str, with_banner: bool) -> Result<()>
     tracing::debug!("rendering banner…");
     let banner = task::spawn_blocking(move || -> Result<_> {
       let mut png = Vec::new();
-      render(&fpath)?.write_to_png(&mut png)?;
+      banner::render(&fpath)?.write_to_png(&mut png)?;
       Ok(png)
     })
     .await??;
@@ -226,145 +222,156 @@ async fn select_track_quality(ctx: &Context<'_>) -> Result<String> {
 
 // ---
 
-const SCALE: i32 = 8;
-const PADDING: i32 = 15;
-const IMAGE_W: i32 = 550;
-const IMAGE_H: i32 = 100 + 2 * PADDING;
+mod banner {
+  use std::ffi::OsStr;
+  use std::fmt::Write;
+  use std::io::Cursor;
 
-fn render(path: impl AsRef<OsStr>) -> Result<cairo::ImageSurface> {
-  let img = cairo::ImageSurface::create(cairo::Format::Rgb24, SCALE * IMAGE_W, SCALE * IMAGE_H)?;
-  let cc = cairo::Context::new(&img)?;
-  cc.scale(SCALE as f64, SCALE as f64);
-  cc.set_source_rgb_u32(0x1e1f22);
-  cc.paint()?;
+  use cairo::*;
+  use cairo_ext::{ContextExt, ImageSurfaceExt};
+  use pango::{Alignment, EllipsizeMode};
+  use pangocairo::{prelude::*, FontMap};
 
-  let cover = ffmpeg::album_cover(&path, "png")?;
-  let cover = cairo::ImageSurface::create_from_png(&mut Cursor::new(cover))?;
+  const SCALE: i32 = 8;
+  const PADDING: i32 = 15;
+  const IMAGE_W: i32 = 550;
+  const IMAGE_H: i32 = 100 + 2 * PADDING;
 
-  let background = {
-    let mut img = cairo::ImageSurface::create(cairo::Format::Rgb24, IMAGE_W, IMAGE_H + 20)?;
-
-    let cc = cairo::Context::new(&img)?;
-    cc.translate(img.width() as f64 / 2.0, img.height() as f64 / 2.0);
-    cc.scale1(img.width() as f64 / cover.width() as f64);
-    cc.translate(-cover.width() as f64 / 2.0, -cover.height() as f64 / 2.0);
-    cc.set_source_surface(&cover, 0.0, 0.0)?;
+  pub fn render(path: impl AsRef<OsStr>) -> super::Result<ImageSurface> {
+    let img = ImageSurface::create(Format::Rgb24, SCALE * IMAGE_W, SCALE * IMAGE_H)?;
+    let cc = Context::new(&img)?;
+    cc.scale(SCALE as f64, SCALE as f64);
+    cc.set_source_rgb_u32(0x1e1f22);
     cc.paint()?;
-    drop(cc);
 
-    img.gaussian_blur(1.5)?;
+    let cover = ffmpeg::album_cover(&path, "png")?;
+    let cover = ImageSurface::create_from_png(&mut Cursor::new(cover))?;
 
-    img
+    let background = {
+      let mut img = ImageSurface::create(Format::Rgb24, IMAGE_W, IMAGE_H + 20)?;
+
+      let cc = Context::new(&img)?;
+      cc.translate(img.width() as f64 / 2.0, img.height() as f64 / 2.0);
+      cc.scale1(img.width() as f64 / cover.width() as f64);
+      cc.translate(-cover.width() as f64 / 2.0, -cover.height() as f64 / 2.0);
+      cc.set_source_surface(&cover, 0.0, 0.0)?;
+      cc.paint()?;
+      drop(cc);
+
+      img.gaussian_blur(1.5)?;
+
+      img
+    };
+
+    {
+      cc.save()?;
+
+      cc.set_source_surface(&background, 0.0, -10.0)?;
+      cc.set_operator(Operator::Overlay);
+      cc.paint_with_alpha(1.0 / 3.0)?;
+
+      cc.translate(PADDING as f64, PADDING as f64);
+      cc.scale1((IMAGE_H - PADDING * 2) as f64 / cover.width() as f64);
+      cc.set_source_surface(&cover, 0.0, 0.0)?;
+      cc.set_operator(Operator::Over);
+      cc.paint()?;
+
+      cc.restore()?;
+    }
+
+    {
+      let fm = FontMap::default();
+      let pc = fm.create_context();
+      let layout = pango::Layout::new(&pc);
+      layout.set_width((IMAGE_W - IMAGE_H - PADDING) * pango::SCALE);
+      layout.set_auto_dir(false);
+
+      let meta = ffmpeg::meta(&path)?;
+      let title = meta.format.tag_or_empty(&["TITLE", "title"]);
+      let artist = meta.format.tag_or_empty(&["ARTIST", "artist"]);
+      let album = meta.format.tag_or_empty(&["ALBUM", "album"]);
+      let genre = meta.format.tag(&["GENRE", "genre"]);
+      let date = meta.format.tag(&["DATE", "date"]);
+      let length = meta.format.tag(&["LENGTH", "TLEN"]);
+
+      let footer = {
+        let sep = " · ";
+        let mut acc = String::new();
+        if let Some(genre) = genre {
+          write!(acc, "{}{}", genre.replace(';', ", "), sep)?;
+        }
+        if let Some(date) = date {
+          write!(acc, "{}{}", &date[..4], sep)?;
+        }
+        if let Some(length) = length {
+          write!(acc, "{}{}", fmt::duration(length.parse::<u64>()? / 1000), sep)?;
+        }
+        acc.truncate(acc.len().saturating_sub(sep.len()));
+        acc
+      };
+
+      let markup = format! {
+        concat! {
+          "<span font='{}, sans'>",
+            "<span font='@wght=400' size='14pt' color='#ffffffff'>{}</span>\n",
+            "<span font='@wght=500' size='10pt' color='#ffffffbb'>{}</span>\n",
+            "<span font='@wght=500' size='10pt' color='#ffffff77'>{}</span>",
+          "</span>",
+        },
+        NOTO_SANS,
+        glib::markup_escape_text(title),
+        glib::markup_escape_text(&artist.replace(';', ", ")),
+        glib::markup_escape_text(if [title, artist].contains(&album) { "" } else { album }),
+      };
+
+      cc.save()?;
+      cc.translate(IMAGE_H as f64, (PADDING - 6) as f64);
+      layout.set_alignment(Alignment::Left);
+      layout.set_ellipsize(EllipsizeMode::End);
+      layout.set_markup(&markup);
+      pangocairo::update_layout(&cc, &layout);
+      pangocairo::show_layout(&cc, &layout);
+      cc.restore()?;
+
+      let markup = format! {
+        concat! {
+          "<span font='{}, sans'>",
+            "<span font='@wght=500' size='10pt' color='#ffffff77'>{}</span>",
+          "</span>",
+        },
+        NOTO_SANS,
+        glib::markup_escape_text(&footer),
+      };
+
+      cc.save()?;
+      cc.translate(IMAGE_H as f64, (IMAGE_H - PADDING - 15) as f64);
+      layout.set_alignment(Alignment::Right);
+      layout.set_ellipsize(EllipsizeMode::Start);
+      layout.set_markup(&markup);
+      pangocairo::update_layout(&cc, &layout);
+      pangocairo::show_layout(&cc, &layout);
+      cc.restore()?;
+    }
+
+    Ok(img)
+  }
+
+  // ---
+
+  macro_rules! font_family(($name:expr, $($suffix:expr),+) => {
+    concat!($name, $(", ", $name, " ", $suffix),+)
+  });
+
+  // fc-query -f '%{family}\n' *.ttf | sort -u
+  const NOTO_SANS: &str = font_family! {
+    "Noto Sans", "Adlam", "Arabic UI", "Armenian", "Balinese", "Bamum",
+    "Bassa Vah", "Bengali UI", "Canadian Aboriginal", "Cham", "Cherokee",
+    "Devanagari", "Ethiopic", "Georgian", "Gujarati", "Gunjala Gondi",
+    "Gurmukhi UI", "Hanifi Rohingya", "Hebrew", "Javanese", "Kannada UI",
+    "Kawi", "Kayah Li", "Khmer UI", "Lao UI", "Lisu", "Malayalam UI",
+    "Medefaidrin", "Meetei Mayek", "Myanmar", "Nag Mundari", "New Tai Lue",
+    "Ol Chiki", "Oriya", "Sinhala UI", "Sora Sompeng", "Sundanese", "Syriac",
+    "Syriac Eastern", "Tai Tham", "Tamil UI", "Tangsa", "Telugu UI", "Thaana",
+    "Thai UI", "Vithkuqi", "HK", "JP", "KR", "SC", "TC", "Symbols"
   };
-
-  {
-    cc.save()?;
-
-    cc.set_source_surface(&background, 0.0, -10.0)?;
-    cc.set_operator(cairo::Operator::Overlay);
-    cc.paint_with_alpha(1.0 / 3.0)?;
-
-    cc.translate(PADDING as f64, PADDING as f64);
-    cc.scale1((IMAGE_H - PADDING * 2) as f64 / cover.width() as f64);
-    cc.set_source_surface(&cover, 0.0, 0.0)?;
-    cc.set_operator(cairo::Operator::Over);
-    cc.paint()?;
-
-    cc.restore()?;
-  }
-
-  {
-    let fm = pangocairo::FontMap::default();
-    let pc = fm.create_context();
-    let layout = pango::Layout::new(&pc);
-    layout.set_width((IMAGE_W - IMAGE_H - PADDING) * pango::SCALE);
-    layout.set_auto_dir(false);
-
-    let meta = ffmpeg::meta(&path)?;
-    let title = meta.format.tag_or_empty(&["TITLE", "title"]);
-    let artist = meta.format.tag_or_empty(&["ARTIST", "artist"]);
-    let album = meta.format.tag_or_empty(&["ALBUM", "album"]);
-    let genre = meta.format.tag(&["GENRE", "genre"]);
-    let date = meta.format.tag(&["DATE", "date"]);
-    let length = meta.format.tag(&["LENGTH", "TLEN"]);
-
-    let footer = {
-      let sep = " · ";
-      let mut acc = String::new();
-      if let Some(genre) = genre {
-        write!(acc, "{}{}", genre.replace(';', ", "), sep)?;
-      }
-      if let Some(date) = date {
-        write!(acc, "{}{}", &date[..4], sep)?;
-      }
-      if let Some(length) = length {
-        write!(acc, "{}{}", fmt::duration(length.parse::<u64>()? / 1000), sep)?;
-      }
-      acc.truncate(acc.len().saturating_sub(sep.len()));
-      acc
-    };
-
-    let markup = format! {
-      concat! {
-        "<span font='{}, sans'>",
-          "<span font='@wght=400' size='14pt' color='#ffffffff'>{}</span>\n",
-          "<span font='@wght=500' size='10pt' color='#ffffffbb'>{}</span>\n",
-          "<span font='@wght=500' size='10pt' color='#ffffff77'>{}</span>",
-        "</span>",
-      },
-      NOTO_SANS,
-      glib::markup_escape_text(title),
-      glib::markup_escape_text(&artist.replace(';', ", ")),
-      glib::markup_escape_text(if [title, artist].contains(&album) { "" } else { album }),
-    };
-
-    cc.save()?;
-    cc.translate(IMAGE_H as f64, (PADDING - 6) as f64);
-    layout.set_alignment(pango::Alignment::Left);
-    layout.set_ellipsize(pango::EllipsizeMode::End);
-    layout.set_markup(&markup);
-    pangocairo::update_layout(&cc, &layout);
-    pangocairo::show_layout(&cc, &layout);
-    cc.restore()?;
-
-    let markup = format! {
-      concat! {
-        "<span font='{}, sans'>",
-          "<span font='@wght=500' size='10pt' color='#ffffff77'>{}</span>",
-        "</span>",
-      },
-      NOTO_SANS,
-      glib::markup_escape_text(&footer),
-    };
-
-    cc.save()?;
-    cc.translate(IMAGE_H as f64, (IMAGE_H - PADDING - 15) as f64);
-    layout.set_alignment(pango::Alignment::Right);
-    layout.set_ellipsize(pango::EllipsizeMode::Start);
-    layout.set_markup(&markup);
-    pangocairo::update_layout(&cc, &layout);
-    pangocairo::show_layout(&cc, &layout);
-    cc.restore()?;
-  }
-
-  Ok(img)
 }
-
-// ---
-
-macro_rules! font_family(($name:expr, $($suffix:expr),+) => {
-  concat!($name, $(", ", $name, " ", $suffix),+)
-});
-
-// fc-query -f '%{family}\n' *.ttf | sort -u
-const NOTO_SANS: &str = font_family! {
-  "Noto Sans", "Adlam", "Arabic UI", "Armenian", "Balinese", "Bamum",
-  "Bassa Vah", "Bengali UI", "Canadian Aboriginal", "Cham", "Cherokee",
-  "Devanagari", "Ethiopic", "Georgian", "Gujarati", "Gunjala Gondi",
-  "Gurmukhi UI", "Hanifi Rohingya", "Hebrew", "Javanese", "Kannada UI",
-  "Kawi", "Kayah Li", "Khmer UI", "Lao UI", "Lisu", "Malayalam UI",
-  "Medefaidrin", "Meetei Mayek", "Myanmar", "Nag Mundari", "New Tai Lue",
-  "Ol Chiki", "Oriya", "Sinhala UI", "Sora Sompeng", "Sundanese", "Syriac",
-  "Syriac Eastern", "Tai Tham", "Tamil UI", "Tangsa", "Telugu UI", "Thaana",
-  "Thai UI", "Vithkuqi", "HK", "JP", "KR", "SC", "TC", "Symbols"
-};

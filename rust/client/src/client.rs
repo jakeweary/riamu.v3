@@ -1,18 +1,19 @@
 use std::panic::AssertUnwindSafe;
-use std::result::Result as StdResult;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use std::{error, result};
 
 use ::serenity::all as serenity;
+use cache::LruFileCache;
 use discord::colors;
 use futures::{FutureExt, TryFutureExt};
 use pyo3::{PyErr, Python};
 use tokio::signal::{self, unix::*};
-use cache::LruFileCache;
-
-use crate::db;
 
 pub use client_macros::*;
+
+use crate::commands::tree as commands;
+use crate::db;
 
 pub use self::command::*;
 pub use self::command_error::*;
@@ -31,8 +32,8 @@ mod env;
 mod traits;
 mod util;
 
-pub type Error = Box<dyn std::error::Error + Send + Sync>;
-pub type Result<T> = StdResult<T, Error>;
+pub type Error = Box<dyn error::Error + Send + Sync>;
+pub type Result<T> = result::Result<T, Error>;
 
 // pub type Error = anyhow::Error;
 // pub type Result<T> = anyhow::Result<T>;
@@ -50,7 +51,6 @@ impl Client {
     c::fontconfig::add_dir("assets/fonts")?;
 
     let env = Env::load();
-    let commands = crate::commands::build();
     let db = db::init(&env.database_url).await?;
     let cache = {
       let base_url = env.cache_base_url.clone();
@@ -62,7 +62,7 @@ impl Client {
 
     let client = Self {
       env,
-      commands,
+      commands: commands(),
       cache: cache.clone(),
       db,
     };

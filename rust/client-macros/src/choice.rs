@@ -1,3 +1,5 @@
+use std::mem;
+
 use darling::export::NestedMeta;
 use darling::{FromMeta, Result};
 use proc_macro::TokenStream;
@@ -22,7 +24,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
     .iter_mut()
     .map(|v| {
       let args = VariantArgs::from_list({
-        &std::mem::take(&mut v.attrs)
+        &mem::take(&mut v.attrs)
           .into_iter()
           .map(|attr| NestedMeta::Meta(attr.meta))
           .collect::<Vec<_>>()

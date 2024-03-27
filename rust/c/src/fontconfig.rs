@@ -2,11 +2,11 @@ use std::ffi::{c_int, CString};
 use std::fmt::{self, Display, Formatter};
 use std::os::unix::prelude::*;
 use std::path::Path;
-use std::ptr;
+use std::{error, ptr, result};
 
 use crate::bindings as c;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = result::Result<T, Error>;
 
 // ---
 
@@ -49,4 +49,4 @@ impl Display for Error {
   }
 }
 
-impl std::error::Error for Error {}
+impl error::Error for Error {}
