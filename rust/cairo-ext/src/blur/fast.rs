@@ -30,7 +30,9 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
     let tmp = vec![[0.0; 3]; 2 * tmp_mid];
 
     (0..height).into_par_iter().for_each_with(tmp, |tmp, y| {
-      let (mut tmp0, mut tmp1) = tmp.split_at_mut(tmp_mid);
+      let (tmp0, tmp1) = tmp.split_at_mut(tmp_mid);
+      let mut tmp0 = &mut tmp0[..width];
+      let mut tmp1 = &mut tmp1[..width];
 
       // SAFETY: safe and aliasing-free as long as `stride_x` and `stride_y` are sound
       // and the iteration is stopped within `srf` buffer bounds, here it fully relies
@@ -42,7 +44,7 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
       };
 
       // read current row of pixels
-      for (dst, src) in zip(&mut tmp0[..width], srf_row()) {
+      for (dst, src) in zip(&mut *tmp0, srf_row()) {
         dst[0] = srgb8_to_f32(src[0]);
         dst[1] = srgb8_to_f32(src[1]);
         dst[2] = srgb8_to_f32(src[2]);
@@ -56,7 +58,7 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
         for _ in 0..nʹ {
           // cumulative sum
           let mut acc = [0.0; 3];
-          for rgb in &mut tmp0[..width] {
+          for rgb in &mut *tmp0 {
             acc[0] += rgb[0];
             acc[1] += rgb[1];
             acc[2] += rgb[2];
@@ -65,7 +67,7 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
 
           // the left edge
           let dst = &mut tmp1[0..1 + r];
-          let src = &tmp0[r..width];
+          let src = &tmp0[r..];
           for (i, (dst, src)) in zip(dst, src).enumerate() {
             let wʹ = 1.0 / (r + i + 1) as f32;
             let r = wʹ * src[0];
@@ -75,9 +77,9 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
           }
 
           // the middle
-          let dst = &mut tmp1[1 + r..width];
-          let src0 = &tmp0[0..width];
-          let src1 = &tmp0[w..width];
+          let dst = &mut tmp1[1 + r..];
+          let src0 = &tmp0[0..];
+          let src1 = &tmp0[w..];
           for (dst, (src0, src1)) in zip(dst, zip(src0, src1)) {
             let r = wʹ * (src1[0] - src0[0]);
             let g = wʹ * (src1[1] - src0[1]);
@@ -86,8 +88,8 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
           }
 
           // the right edge
-          let dst = &mut tmp1[width - r..width];
-          let src0 = &tmp0[width - w..width];
+          let dst = &mut tmp1[width - r..];
+          let src0 = &tmp0[width - w..];
           let src1 = &tmp0[width - 1];
           for (i, (dst, src0)) in zip(dst, src0).enumerate() {
             let wʹ = 1.0 / (w - i - 1) as f32;
@@ -102,7 +104,7 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
       }
 
       // write back current row of pixels
-      for (src, dst) in zip(&tmp0[..width], srf_row()) {
+      for (src, dst) in zip(&*tmp0, srf_row()) {
         dst[0] = f32_to_srgb8(src[0]);
         dst[1] = f32_to_srgb8(src[1]);
         dst[2] = f32_to_srgb8(src[2]);
