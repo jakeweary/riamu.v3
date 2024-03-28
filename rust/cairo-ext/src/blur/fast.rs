@@ -56,7 +56,7 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
         for _ in 0..nʹ {
           // cumulative sum
           let mut acc = [0.0; 3];
-          for rgb in &mut *tmp0 {
+          for rgb in &mut tmp0[..width] {
             acc[0] += rgb[0];
             acc[1] += rgb[1];
             acc[2] += rgb[2];
