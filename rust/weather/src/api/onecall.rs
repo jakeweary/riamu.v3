@@ -58,7 +58,7 @@ pub struct Hour {
   pub dt: i64,                         // unix time
 
   pub temp: f64,                       // °C
-  // pub feels_like: f64,              // °C
+  pub feels_like: f64,                 // °C
   pub dew_point: f64,                  // °C
 
   // pub humidity: u8,                 // %

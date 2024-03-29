@@ -137,8 +137,9 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
   // temps
   {
     let temp = Range::of(&weather.hourly, |h| h.temp);
+    let feels_like = Range::of(&weather.hourly, |h| h.feels_like);
     let dew_point = Range::of(&weather.hourly, |h| h.dew_point);
-    let range = (temp & dew_point).round_n_rel(4.0).round();
+    let range = (temp & feels_like & dew_point).round_n_rel(4.0).round();
     let map = |value| -height * range.unlerp(value);
 
     ctx.save()?;
@@ -155,6 +156,14 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("°C")),
     ])?;
     #[rustfmt::skip]
+    legend(ctx, DISCORD_COLORS[9].light, &[
+      (0x949ba4, format_args!(" Feels like ")),
+      (0xffffff, format_args!("{:.0}", Num(feels_like.min))),
+      (0x949ba4, format_args!(" to ")),
+      (0xffffff, format_args!("{:.0}", Num(feels_like.max))),
+      (0x949ba4, format_args!("°C")),
+    ])?;
+    #[rustfmt::skip]
     legend(ctx, DISCORD_COLORS[2].light, &[
       (0x949ba4, format_args!(" Dew point ")),
       (0xffffff, format_args!("{:.0}", Num(dew_point.min))),
@@ -163,20 +172,24 @@ pub fn hourly(ctx: &Context, weather: &api::Onecall) -> Result<()> {
       (0x949ba4, format_args!("°C")),
     ])?;
 
+    let (t, e, x, y, sx, sy) = (1.0 / 3.0, 0.0, 0.0, 0.0, hour_width, 1.0);
     ctx.translate(hour_width / 2.0, 0.0);
     ctx.set_line_cap(LineCap::Round);
     ctx.set_line_width(1.0);
 
-    let (x, y, sx, sy) = (0.0, 0.0, hour_width, 1.0);
-    draw::spline(ctx, 1.0 / 3.0, 0.0, x, y, sx, sy, &weather.hourly, |h| map(h.dew_point));
-    ctx.set_dash(&[1.0, 3.0], 0.0);
+    draw::spline(ctx, t, e, x, y, sx, sy, &weather.hourly, |h| map(h.dew_point));
     ctx.set_source_rgb_u32(DISCORD_COLORS[2].light);
+    ctx.set_dash(&[0.0, 2.0], 0.0);
     ctx.stroke()?;
 
-    let (x, y, sx, sy) = (0.0, 0.0, hour_width, 1.0);
-    draw::spline(ctx, 1.0 / 3.0, 0.0, x, y, sx, sy, &weather.hourly, |h| map(h.temp));
-    ctx.set_dash(&[], 0.0);
+    draw::spline(ctx, t, e, x, y, sx, sy, &weather.hourly, |h| map(h.feels_like));
+    ctx.set_source_rgb_u32(DISCORD_COLORS[9].light);
+    ctx.set_dash(&[0.0, 2.0], 0.0);
+    ctx.stroke()?;
+
+    draw::spline(ctx, t, e, x, y, sx, sy, &weather.hourly, |h| map(h.temp));
     ctx.set_source_rgb_u32(DISCORD_COLORS[8].light);
+    ctx.set_dash(&[], 0.0);
     ctx.stroke()?;
 
     ctx.restore()?;
