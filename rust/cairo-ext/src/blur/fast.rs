@@ -17,9 +17,12 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
   };
 
   let (scale_x, scale_y) = srf.device_scale();
+
   let width = srf.width() as usize;
   let height = srf.height() as usize;
-  let srf_ptr = srf.data().unwrap().as_mut_ptr() as usize;
+
+  let srf_ptr = srf.data().unwrap().as_mut_ptr();
+  let srf_ptr = Shared(srf_ptr as *mut [u8; 4]);
 
   let blur = |size, stride, σ, n| {
     let [width, height] = size;
@@ -38,9 +41,9 @@ pub fn gaussian_blur_xy(srf: &mut ImageSurface, [σx, σy]: [f64; 2], [nx, ny]: 
       // and the iteration is stopped within `srf` buffer bounds, here it fully relies
       // to be stopped by the `zip` combinators below
       let srf_row = || {
-        let srf_ptr = srf_ptr as *mut [u8; 4];
+        let &Shared(ptr) = &srf_ptr;
         let indices = (stride_y * y..).step_by(stride_x);
-        indices.map(move |i| unsafe { &mut *srf_ptr.add(i) })
+        indices.map(move |i| unsafe { &mut *ptr.add(i) })
       };
 
       // read current row of pixels
@@ -142,3 +145,6 @@ fn box_blur_widths(σ: f64, n: usize) -> (f64, [(usize, usize); 2]) {
   let w1 = (wu as usize, (n - m) as usize);
   (σ_actual, [w0, w1])
 }
+
+struct Shared<T>(T);
+unsafe impl<T> Sync for Shared<T> {}
