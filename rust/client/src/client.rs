@@ -259,7 +259,7 @@ impl Client {
       }
       Event::PresenceUpdate(PresenceUpdateEvent { presence, .. }) => {
         user_id = Some(presence.user.id);
-        user_name = presence.user.name.clone();
+        user_name.clone_from(&presence.user.name);
         user_status = Some(presence.into());
       }
       _ => {}

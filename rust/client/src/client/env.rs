@@ -18,6 +18,7 @@ macro_rules! fallback {
 
 macro_rules! impl_env {
   ($($ENV:ident => $field:ident$(: |$ident:ident| -> $T:ty $block:block)?;)*) => {
+    #[allow(dead_code)]
     #[derive(Debug)]
     pub struct Env {
       $(pub $field: fallback!(String $($T)*)),*

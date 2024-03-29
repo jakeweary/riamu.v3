@@ -2,14 +2,17 @@ use serenity::all::*;
 
 use crate::client::{err, Context, Result};
 
+use self::api::Response::*;
+
 #[macros::command(desc = "Look up a movie on OMDB")]
 pub async fn run(ctx: &Context<'_>, movie: &str) -> Result<()> {
   ctx.event.defer(ctx).await?;
 
   tracing::debug!("fetching json…");
   let api = api::Api::new(&ctx.client.env.omdb_api_key);
-  let api::Response::Success(json) = api.query(movie).await? else {
-    err::message!("could not find anything");
+  let json = match api.query(movie).await? {
+    Success(json) => json,
+    Error(err) => err::message!("{}", err.error),
   };
 
   tracing::debug!("sending response…");
@@ -66,8 +69,8 @@ mod api {
   pub struct Success {
     pub title: String,
     pub year: String,
-    pub rated: String,
-    pub released: String,
+    // pub rated: String,
+    // pub released: String,
     pub runtime: String,
     pub genre: String,
     pub director: String,
@@ -76,11 +79,11 @@ mod api {
     pub plot: String,
     pub language: String,
     pub country: String,
-    pub awards: String,
+    // pub awards: String,
     pub poster: String,
     pub ratings: Vec<Rating>,
-    pub metascore: String,
-    pub r#type: String,
+    // pub metascore: String,
+    // pub r#type: String,
     #[serde(flatten)]
     pub imdb: Imdb,
     #[serde(flatten)]
@@ -91,10 +94,10 @@ mod api {
   #[serde(rename_all = "PascalCase")]
   pub struct MovieExtra {
     #[serde(rename = "DVD")]
-    pub dvd: String,
+    // pub dvd: String,
     pub box_office: String,
-    pub production: String,
-    pub website: String,
+    // pub production: String,
+    // pub website: String,
   }
 
   #[derive(Debug, Deserialize)]

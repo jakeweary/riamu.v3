@@ -1,5 +1,6 @@
 use rand::prelude::*;
 
+#[allow(dead_code)]
 pub struct Weighted<T> {
   pub item: T,
   pub local_index: usize,

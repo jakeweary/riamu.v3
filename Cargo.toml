@@ -21,6 +21,7 @@ let_and_return = "allow"
 too_many_arguments = "allow"
 transmute_int_to_char = "allow"
 transmute_num_to_bytes = "allow"
+manual_unwrap_or_default = "allow"
 
 [workspace.dependencies]
 api = { path = "rust/api" }
