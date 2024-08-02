@@ -1,5 +1,5 @@
 use std::fmt::{self, Display, Formatter};
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 use chrono::DateTime;
 use regex::Regex;
@@ -104,10 +104,12 @@ struct TermLinks<'a>(&'a str);
 
 impl Display for TermLinks<'_> {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-    static RE: OnceLock<Regex> = OnceLock::new();
-    let re = RE.get_or_init(|| Regex::new(r"\[(.+?)\]").unwrap());
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+      let re = r"\[(.+?)\]";
+      Regex::new(re).unwrap()
+    });
 
-    re.replace_all_fmt(f, self.0, |f, caps| {
+    RE.replace_all_fmt(f, self.0, |f, caps| {
       let (_, [term]) = caps.extract();
       write!(f, "[{}]({})", term, term_link(term))
     })
