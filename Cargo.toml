@@ -40,7 +40,6 @@ regex-ext = { path = "rust/regex-ext" }
 util = { path = "rust/util" }
 weather = { path = "rust/weather" }
 
-cairo-rs = { version = "*", default-features = false }
 chrono = { version = "*", default-features = false }
 ego-tree = "*"
 filetime = "*"
@@ -49,11 +48,9 @@ inotify = "*"
 itertools = "*"
 log = "*"
 lru = { version = "*", default-features = false }
-pango = "*"
-pangocairo = "*"
 parking_lot = "*"
 procfs = { version = "*", default-features = false }
-pyo3 = "*"
+pyo3 = ">=0.22"
 rand = "*"
 rand_core = "*"
 rayon = "*"
@@ -72,10 +69,14 @@ tracing = "*"
 tracing-subscriber = "*"
 url = "*"
 
+cairo-rs = { version = "0.18", default-features = false }
+pango = "0.18"
+pangocairo = "0.18"
+
 darling = "*"
 proc-macro2 = "*"
 quote = "*"
-syn = "*"
+syn = ">=2"
 
 bindgen = { version = "*", default-features = false }
 pkg-config = "*"

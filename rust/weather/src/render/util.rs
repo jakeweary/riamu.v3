@@ -9,7 +9,7 @@ pub fn capitalize(text: &str) -> String {
 
 pub fn datetime(offset: i32, timestamp: i64) -> DateTime<FixedOffset> {
   let tz = FixedOffset::east_opt(offset).unwrap();
-  let dt = NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap();
+  let dt = DateTime::from_timestamp(timestamp, 0).unwrap().naive_utc();
   DateTime::from_naive_utc_and_offset(dt, tz)
 }
 

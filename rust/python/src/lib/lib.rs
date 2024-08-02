@@ -5,7 +5,7 @@ pub mod dz;
 
 pub fn versions() -> PyResult<Vec<(String, String)>> {
   Python::with_gil(|py| {
-    let lib = py.import("lib")?;
+    let lib = py.import_bound("lib")?;
     let versions = lib.call_method0("versions")?;
     versions.extract()
   })

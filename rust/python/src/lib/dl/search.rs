@@ -10,7 +10,7 @@ pub struct Result {
 
 pub fn search(query: &str) -> PyResult<Vec<Result>> {
   Python::with_gil(|py| {
-    let dl = py.import("lib.dl")?;
+    let dl = py.import_bound("lib.dl")?;
     let info = dl.call_method1("ytsearch", (query,))?;
     info.get_item("entries")?.extract()
   })

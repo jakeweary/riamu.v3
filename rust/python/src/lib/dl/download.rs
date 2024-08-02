@@ -10,8 +10,8 @@ pub struct Info {
 }
 
 impl<'a> FromPyObject<'a> for Info {
-  fn extract(any: &'a PyAny) -> PyResult<Self> {
-    let dict: &PyDict = any.extract()?;
+  fn extract_bound(any: &Bound<'a, PyAny>) -> PyResult<Self> {
+    let dict: Bound<'_, PyDict> = any.extract()?;
     Ok(Self {
       id: dict.extract("id")?,
       title: dict.extract("title")?,
@@ -31,8 +31,8 @@ pub struct Context {
 }
 
 impl<'a> FromPyObject<'a> for Context {
-  fn extract(any: &'a PyAny) -> PyResult<Self> {
-    let dict: &PyDict = any.extract()?;
+  fn extract_bound(any: &Bound<'a, PyAny>) -> PyResult<Self> {
+    let dict: Bound<'_, PyDict> = any.extract()?;
     Ok(Self {
       duration: dict.extract_optional("duration")?,
       formats: dict.extract("formats")?,
@@ -71,8 +71,8 @@ pub struct Format {
 }
 
 impl<'a> FromPyObject<'a> for Format {
-  fn extract(any: &'a PyAny) -> PyResult<Self> {
-    let dict: &PyDict = any.extract()?;
+  fn extract_bound(any: &Bound<'a, PyAny>) -> PyResult<Self> {
+    let dict: Bound<'_, PyDict> = any.extract()?;
     Ok(Self {
       format: dict.extract("format")?,
       format_id: dict.extract("format_id")?,

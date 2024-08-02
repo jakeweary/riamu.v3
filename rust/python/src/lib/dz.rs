@@ -29,7 +29,7 @@ pub struct Album {
 
 pub fn search(query: &str) -> PyResult<Vec<Track>> {
   Python::with_gil(|py| {
-    let dz = py.import("lib.dz")?;
+    let dz = py.import_bound("lib.dz")?;
     let tracks = dz.call_method1("search", (query,))?;
     tracks.get_item("data")?.extract()
   })
@@ -37,9 +37,9 @@ pub fn search(query: &str) -> PyResult<Vec<Track>> {
 
 pub fn download(url: &str, bitrate: &str, out_dir: &Path) -> PyResult<Track> {
   Python::with_gil(|py| {
-    let dz = py.import("lib.dz")?;
+    let dz = py.import_bound("lib.dz")?;
     let dl_obj = dz.call_method1("generate_download_object", (url, bitrate))?;
-    dz.call_method1("download", (dl_obj, out_dir))?;
+    dz.call_method1("download", (&dl_obj, out_dir))?;
     dl_obj.getattr("single")?.get_item("trackAPI")?.extract()
   })
 }

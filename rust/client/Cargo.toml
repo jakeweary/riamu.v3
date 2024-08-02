@@ -39,7 +39,7 @@ procfs.workspace = true
 pyo3.workspace = true
 rand.workspace = true
 regex.workspace = true
-reqwest = { workspace = true, features = ["default-tls", "json", "stream"] }
+reqwest = { workspace = true, features = ["default-tls", "json", "multipart", "stream"] }
 scraper.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -14,7 +14,7 @@ pub trait DictExt<'a> {
     K: ToPyObject;
 }
 
-impl<'a> DictExt<'a> for &'a PyDict {
+impl<'a> DictExt<'a> for &Bound<'a, PyDict> {
   fn extract<T, K>(self, key: K) -> PyResult<T>
   where
     T: FromPyObject<'a>,
@@ -22,7 +22,7 @@ impl<'a> DictExt<'a> for &'a PyDict {
   {
     let item = self.get_item(key)?.unwrap_or_else(|| {
       let py = self.py();
-      py.None().into_ref(py)
+      py.None().into_bound(py)
     });
     item.extract()
   }

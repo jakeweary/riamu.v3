@@ -30,7 +30,7 @@ impl Downloader {
       match py.allow_threads(|| selected_out.blocking_recv()) {
         Ok(selected) => {
           tracing::trace!("format selector: done");
-          Ok(PyList::new(py, selected).into())
+          Ok(PyList::new_bound(py, selected).into())
         }
         Err(_) => {
           tracing::trace!("format selector: no formats were selected");
@@ -45,11 +45,11 @@ impl Downloader {
 
     let join = task::spawn_blocking(|| {
       Python::with_gil(|py| {
-        let dl = py.import("lib.dl")?;
-        let fs = PyCell::new(py, fs)?;
+        let dl = py.import_bound("lib.dl")?;
+        let fs = Bound::new(py, fs)?;
 
         tracing::trace!("downloading…");
-        let res = dl.call_method1("download", (url, out_dir, fs));
+        let res = dl.call_method1("download", (url, out_dir, &fs));
 
         // make sure format selector gets dropped
         // to prevent channel-related deadlocks
@@ -78,7 +78,7 @@ struct FormatSelector {
 
 #[pymethods]
 impl FormatSelector {
-  fn __call__(&mut self, ctx: &PyAny) -> PyResult<Py<PyList>> {
+  fn __call__(&mut self, ctx: &Bound<'_, PyAny>) -> PyResult<Py<PyList>> {
     // FIXME: panics on playlists, should do something about it
     let f = self.f.take().expect("should be called only once");
     f(ctx.py(), ctx.extract()?)
