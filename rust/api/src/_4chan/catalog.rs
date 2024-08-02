@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::{random, regex};
+use crate::util::{random, regex};
 
 #[derive(Debug, Deserialize)]
 pub struct Catalog {

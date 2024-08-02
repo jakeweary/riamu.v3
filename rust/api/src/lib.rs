@@ -1,5 +1,7 @@
 pub mod _2ch;
 pub mod _4chan;
 
-mod random;
-mod regex;
+mod util {
+  pub mod random;
+  pub mod regex;
+}
