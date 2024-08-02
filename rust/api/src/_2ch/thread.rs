@@ -24,6 +24,7 @@ pub struct Post {
 
 #[derive(Debug, Deserialize)]
 pub struct File {
+  pub name: String,
   pub path: String,
 }
 

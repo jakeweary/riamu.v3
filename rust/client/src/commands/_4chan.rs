@@ -77,8 +77,15 @@ async fn reply(ctx: &Context<'_>, domain: &str, board_id: &str, post_id: u64, th
   let files = match &post.file {
     Some(file) => {
       tracing::debug!("attaching files…");
-      let url = format!("https://i.4cdn.org/{}/{}{}", board_id, file.id, file.ext);
-      let att = CreateAttachment::url(ctx, &url).await?;
+      let fname = format!("{}{}", file.id, file.ext);
+      let furl = format!("https://i.4cdn.org/{}/{}", board_id, fname);
+
+      let client = reqwest::Client::builder().build()?;
+      let req = client.get(furl).header(reqwest::header::USER_AGENT, "Mozilla");
+      let res = req.send().await?.error_for_status()?;
+      let data = res.bytes().await?;
+
+      let att = CreateAttachment::bytes(data, fname);
       EditAttachments::new().add(att)
     }
     None => EditAttachments::new(),

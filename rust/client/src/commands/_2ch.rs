@@ -89,9 +89,17 @@ async fn reply(ctx: &Context<'_>, domain: &str, board_id: &str, post_id: u64, th
   let mut files = EditAttachments::new();
   if let Some(post_files) = &post.files {
     tracing::debug!("attaching files…");
+
+    let client = reqwest::Client::builder().build()?;
+
     for file in post_files {
       let url = format!("https://{}{}", domain, file.path);
-      let att = CreateAttachment::url(ctx, &url).await?;
+
+      let req = client.get(url);
+      let res = req.send().await?.error_for_status()?;
+      let data = res.bytes().await?;
+
+      let att = CreateAttachment::bytes(data, &file.name);
       files = files.add(att);
     }
   }
