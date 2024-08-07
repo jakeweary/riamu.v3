@@ -244,12 +244,12 @@
         },
         "gallery-dl": {
             "hashes": [
-                "sha256:4b5445d05349fe8293c2af525d720e9ea04856218860156ec4f8d5ffa7db795f",
-                "sha256:82404259a70e8bee0c90c44c2ac866828452ea202635612d8af88d31730aa007"
+                "sha256:09373a081005231397e4177f872ddeeb931b5b2236c059fe6ba863e24b6e063a",
+                "sha256:851e5f905ca7723c5aa3d376db5a2d8a05db2406ad6b008aa42deb38c244ed47"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.4'",
-            "version": "==1.27.1"
+            "version": "==1.27.2"
         },
         "idna": {
             "hashes": [
@@ -418,12 +418,12 @@
         },
         "yt-dlp": {
             "hashes": [
-                "sha256:4318aa523694611562f01419c8d526b662a72df34ef8ba454016b34c8366c158",
-                "sha256:d0d927038e30a05f6eab26ff6189628456ea21bb159a3d9dc2e855eef2810eac"
+                "sha256:ab507ff600bd9269ad4d654e309646976778f0e243eaa2f6c3c3214278bb2922",
+                "sha256:e8551f26bc8bf67b99c12373cc87ed2073436c3437e53290878d0f4b4bb1f663"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==2024.8.1"
+            "version": "==2024.8.6"
         }
     },
     "develop": {
