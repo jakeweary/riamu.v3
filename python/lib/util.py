@@ -1,10 +1,8 @@
-from typing import Callable, Hashable, Iterable, TypeVar
+from typing import Callable, Hashable, Iterable
 
-_T = TypeVar('_T')
-
-def unique_by(key: Callable[[_T], Hashable], items: Iterable[_T]):
+def unique_by[T](key: Callable[[T], Hashable], items: Iterable[T]):
   seen: set[Hashable] = set()
-  unique: list[_T] = []
+  unique: list[T] = []
   for item in items:
     k = key(item)
     if k not in seen:

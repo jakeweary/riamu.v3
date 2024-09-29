@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 AS base
+FROM ubuntu:24.04 AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -27,9 +27,8 @@ FROM build AS build-app
 
 RUN apt update && \
   apt install -y --no-install-recommends \
-    ca-certificates curl git build-essential pkg-config clang \
-    python3-dev llvm-dev libclang-dev libssl-dev \
-    libpango1.0-dev libcairo2-dev librsvg2-dev
+    ca-certificates curl git build-essential pkg-config \
+    python3-dev libssl-dev libclang-dev libpango1.0-dev libcairo2-dev librsvg2-dev
 
 RUN --mount=type=cache,target=/root/.rustup \
   --mount=type=cache,target=/root/.cargo \
@@ -50,6 +49,7 @@ FROM base AS app
 
 WORKDIR /app
 
+ARG PIP_BREAK_SYSTEM_PACKAGES=1
 ARG PIP_DISABLE_PIP_VERSION_CHECK=1
 ARG PIP_NO_CACHE_DIR=1
 

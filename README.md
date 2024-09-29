@@ -25,13 +25,13 @@ docker compose down # shutdown
 ```sh
 sudo apt update
 sudo apt install -y \
-  python3 python3-pip ffmpeg sqlite3 curl git build-essential pkg-config clang \
-  python3-dev llvm-dev libclang-dev libssl-dev libpango1.0-dev libcairo2-dev librsvg2-dev
+  python3 python3-pip ffmpeg sqlite3 curl git build-essential pkg-config \
+  python3-dev libssl-dev libclang-dev libpango1.0-dev libcairo2-dev librsvg2-dev
 
 curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
 rustup toolchain install nightly
 
-python3 -m pip install --user pipenv
+python3 -m pip install --break-system-packages pipenv
 pipenv install --dev
 
 scripts/get-assets
