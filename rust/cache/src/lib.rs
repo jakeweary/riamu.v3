@@ -153,7 +153,7 @@ impl LruFileCache {
       while state.bytes_stored + bytes > self.bytes_limit {
         let (name, file) = state.pop().unwrap();
         tracing::debug!(?name, "removing a {}B file…", file.size.iec());
-        fs::remove_file(&self.working_dir.join(&name))?;
+        fs::remove_file(self.working_dir.join(&name))?;
       }
     }
 
