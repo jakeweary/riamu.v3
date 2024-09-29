@@ -7,12 +7,9 @@ use serde::Deserialize;
 
 pub fn meta(path: impl AsRef<OsStr>) -> io::Result<Meta> {
   let mut cmd = Command::new("ffprobe");
-
-  #[rustfmt::skip]
-  let cmd = cmd
-    .arg("-of").arg("json=c=1")
-    .arg("-show_format")
-    .arg(&path);
+  cmd.arg("-of").arg("json=c=1");
+  cmd.arg("-show_format");
+  cmd.arg(&path);
 
   let out = cmd.output()?;
   let meta = serde_json::from_slice(&out.stdout)?;
@@ -21,13 +18,10 @@ pub fn meta(path: impl AsRef<OsStr>) -> io::Result<Meta> {
 
 pub fn album_cover(path: impl AsRef<OsStr>, codec: &str) -> io::Result<Vec<u8>> {
   let mut cmd = Command::new("ffmpeg");
-
-  #[rustfmt::skip]
-  let cmd = cmd
-    .arg("-i").arg(path)
-    .arg("-c:v").arg(codec)
-    .arg("-f").arg("image2pipe")
-    .arg("-");
+  cmd.arg("-i").arg(path);
+  cmd.arg("-c:v").arg(codec);
+  cmd.arg("-f").arg("image2pipe");
+  cmd.arg("-");
 
   let out = cmd.output()?;
   Ok(out.stdout)

@@ -1,6 +1,5 @@
 import logging
-from operator import itemgetter
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from yt_dlp import YoutubeDL
 
@@ -17,18 +16,19 @@ FormatId = str
 FormatSelectorContext = dict[str, Any]
 FormatSelector = Callable[[FormatSelectorContext], list[FormatId]]
 
-def download(url: str, out_dir: str, fs: Optional[FormatSelector] = None, **kwargs: Any) -> Info:
+def download(url: str, out_dir: str, fs: FormatSelector | None = None, **kwargs: Any) -> Info:
   format = _wrap_format_selector(fs) if fs else {}
   params = _defaults() | {'paths': {'home': out_dir}} | format | kwargs
   with YoutubeDL(params) as ydl:
-    return ydl.extract_info(url) # type: ignore
+    info: Any = ydl.extract_info(url) # pyright: ignore[reportUnknownMemberType]
+    return info
 
 def ytsearch(query: str, limit: int = 50, **kwargs: Any) -> Info:
   params = _defaults() | {'extract_flat': 'in_playlist'} | kwargs
   with YoutubeDL(params) as ydl:
-    full_query = f'ytsearch{limit}:{query}'
-    info = ydl.extract_info(full_query, download=False, process=False) # type: ignore
-    return _fix_info(info) # type: ignore
+    info: Any = ydl.extract_info( # pyright: ignore[reportUnknownMemberType]
+      f'ytsearch{limit}:{query}', download=False, process=False)
+    return _fix_info(info)
 
 # ---
 
@@ -40,9 +40,7 @@ def _defaults() -> Params:
     'concurrent_fragment_downloads': 16,
     # 'external_downloader': 'aria2c',
     # 'external_downloader_args': ['-q', '-k1M'],
-    'postprocessors': [
-      {'key': 'FFmpegMetadata'},
-    ],
+    'postprocessors': [{'key': 'FFmpegMetadata'}],
   } # yapf: disable (https://github.com/google/yapf/issues/1015)
 
 def _wrap_format_selector(fs: FormatSelector) -> Params:
@@ -69,7 +67,7 @@ def _merge_formats(formats: list[Format]) -> Format:
   }
 
 def _fix_info(info: Info) -> Info:
-  entries = util.unique_by(itemgetter('url'), info['entries'])
+  entries = util.unique_by(lambda e: e['url'], info['entries'])
   entries.sort(key=lambda e: e['channel'] is None)
   return info | {'entries': entries}
 

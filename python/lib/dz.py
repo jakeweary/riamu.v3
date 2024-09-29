@@ -3,11 +3,11 @@ import logging
 import os
 from typing import Any
 
-from deemix import generateDownloadObject # type: ignore
+from deemix import generateDownloadObject # pyright: ignore[reportUnknownVariableType]
 from deemix.downloader import Downloader
 from deemix.plugins.spotify import Spotify
 from deemix.settings import DEFAULTS
-from deemix.utils import getBitrateNumberFromText # type: ignore
+from deemix.utils import getBitrateNumberFromText # pyright: ignore[reportUnknownVariableType]
 from deemix.types.DownloadObjects import Single
 from deezer import Deezer
 
@@ -20,12 +20,14 @@ class DzException(Exception):
 
 def search(query: str) -> dict[str, Any]:
   dz = _dz()
-  return dz.api.search_track(query) # type: ignore
+  res: Any = dz.api.search_track(query) # pyright: ignore[reportUnknownMemberType]
+  return res
 
 def generate_download_object(url: str, bitrate: str = 'flac') -> Any:
   dz = _dz()
   br = getBitrateNumberFromText(bitrate)
-  return generateDownloadObject(dz, url, br, dz.plugins, dz.listener) # type: ignore
+  obj: Any = generateDownloadObject(dz, url, br, dz.plugins, dz.listener)
+  return obj
 
 def download(dl_obj: Any, out_dir: str) -> None:
   if not isinstance(dl_obj, Single):
@@ -45,11 +47,11 @@ class _Deezer(Deezer):
     super().__init__()
     self.listener = _LogListener()
     self.plugins = {'spotify': _Spotify()}
-    self.login_via_arl(os.environ['DEEZER_ARL']) # type: ignore
+    self.login_via_arl(os.environ['DEEZER_ARL']) # pyright: ignore[reportUnknownMemberType]
 
 class _Spotify(Spotify):
   def __init__(self):
-    super().__init__() # type: ignore
+    super().__init__() # pyright: ignore[reportUnknownMemberType]
     self.credentials = {
       'clientId': os.environ['SPOTIFY_APP_ID'],
       'clientSecret': os.environ['SPOTIFY_APP_SECRET'],
